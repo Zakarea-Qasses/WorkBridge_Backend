@@ -13,5 +13,9 @@ class Skill extends Model
      return $this->belongsToMany(Profile::class,'profile_skill');
     }
 
-    
+     public function compaines()
+    {
+     return $this->belongsToMany(Company::class,'company_skill');
+    }
+
 }

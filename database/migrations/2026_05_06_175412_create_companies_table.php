@@ -20,7 +20,7 @@ return new class extends Migration
         $table->string('logo')->nullable();
         $table->string('website')->nullable();
         $table->string('location')->nullable();
-
+        $table->string('phone')->nullable();
         $table->text('description')->nullable();
 
         $table->boolean('is_verified')->default(false);

@@ -39,6 +39,11 @@ class ProfileController extends Controller
             'skills.*'=>['string','max:255'],
         ]);
 
+        if(isset($data['name'])){
+            $user->update([
+                'name'=>$data['name'] ?? $profile->name,
+            ]);
+
         $profile->update([
             'name'=>$data['name'] ?? $profile->name,
             'description'=>$data['description'] ?? $profile->description,
@@ -66,4 +71,5 @@ class ProfileController extends Controller
         ]);
     }
 
+}
 }
