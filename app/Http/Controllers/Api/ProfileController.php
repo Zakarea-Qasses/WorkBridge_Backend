@@ -30,6 +30,7 @@ class ProfileController extends Controller
     }
 
         $data = $request->validate([
+            'name'=>['string','max:100'],
             'job_title'=>['nullable','string','max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
             'address' => ['nullable', 'string', 'max:255'],
@@ -41,7 +42,7 @@ class ProfileController extends Controller
 
         if(isset($data['name'])){
             $user->update([
-                'name'=>$data['name'] ?? $profile->name,
+                'name'=>$data['name'],
             ]);
 
         $profile->update([

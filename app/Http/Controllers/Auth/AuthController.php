@@ -39,10 +39,10 @@ class AuthController extends Controller
             $user->profile()->create([
                 'name'=>$request->name
             ]);
-     
+          
         }
 
-         if($user->role==='company'){
+        elseif($user->role==='company'){
             $user->company()->create([
                 'company_name'=>$user->name,
             ]);

@@ -40,10 +40,12 @@ class CompanyController extends Controller
 
         $company = $request->user()->company;
 
-         if(isset($data['name'])){
+         if(isset($data['company_name'])){
+
             $user->update([
-                'name'=>$data['name'] ?? $company->name,
+                'name'=>$data['company_name'],
             ]);
+
          $company->update([
             'company_name'=>$data['company_name'] ?? $company->name,
             'description'=>$data['description'] ?? $company->description,
