@@ -8,7 +8,7 @@ use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\PostController;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\Api\DashboardController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -104,4 +104,17 @@ Route::middleware([
         PostController::class,
         'close'
     ]);
+});
+//dashboard
+Route::middleware(['auth:sanctum'])->group(function () {
+
+    Route::get('/dashboard/personal', [DashboardController::class, 'personal'])
+        ->middleware('RoleMiddleware:personal');
+
+    Route::get('/dashboard/company', [DashboardController::class, 'company'])
+        ->middleware('RoleMiddleware:company');
+
+    Route::get('/dashboard/admin', [DashboardController::class, 'admin'])
+        ->middleware('RoleMiddleware:admin');
+
 });

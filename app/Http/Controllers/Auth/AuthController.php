@@ -87,13 +87,31 @@ class AuthController extends Controller
             ], 403);
         }
 
-        $token = $user->createToken('api-token')->plainTextToken;
+      $token = $user->createToken('api-token')->plainTextToken;
 
-        return response()->json([
-            'message' => 'تم تسجيل الدخول بنجاح',
-            'token' => $token,
-            'user' => $user,
-        ]);
+$dashboardUrl = match ($user->role) {
+    'personal' => '/api/dashboard/personal',
+    'company' => '/api/dashboard/company',
+    'admin' => '/api/dashboard/admin',
+    default => null,
+};
+
+if (!$dashboardUrl) {
+    return response()->json([
+        'message' => 'نوع المستخدم غير معروف'
+    ], 403);
+}
+
+return response()->json([
+    'message' => 'تم تسجيل الدخول بنجاح',
+    'token' => $token,
+    'user' => $user,
+
+    'dashboard' => [
+        'role' => $user->role,
+        'url' => $dashboardUrl,
+    ]
+]);
     }
 
 public function verify(Request $request)
