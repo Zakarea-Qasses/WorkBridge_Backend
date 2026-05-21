@@ -57,7 +57,7 @@ class ProfileController extends Controller
         $skillIds=[];
 
         foreach($data['skills'] as $skillName){
-            $skill = \App\Models\Skill::firstOrCreate([
+            $skill = Skill::firstOrCreate([
                 'name'=>trim($skillName)
             ]);
             
