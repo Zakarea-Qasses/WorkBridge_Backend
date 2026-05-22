@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\PostController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\UserNotificationController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -75,6 +76,17 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::put('/company', [CompanyController::class, 'update'])
         ->middleware('role:company');
  
+
+});
+
+//Notification Routes
+
+Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('/notifications', [UserNotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [UserNotificationController::class, 'unreadCount']);
+    Route::post('/notifications/{id}/read', [UserNotificationController::class, 'markAsRead']);
+    Route::post('/notifications/read-all', [UserNotificationController::class, 'markAllAsRead']);
 
 });
 

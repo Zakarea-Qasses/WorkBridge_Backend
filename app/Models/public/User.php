@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
+
 class User extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens, Notifiable;
@@ -36,6 +37,7 @@ class User extends Authenticatable implements MustVerifyEmail
     public function company(){
         return $this->hasOne(Company::class);
     }
+
 
     public function posts(){
         return $this->hasMany(Post::class);
