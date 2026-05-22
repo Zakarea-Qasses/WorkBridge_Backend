@@ -45,6 +45,20 @@ Route::get('/reset-password/{token}',function($token){
     ]);
 })->name('password.reset');
 
+//dashboard
+Route::middleware(['auth:sanctum'])->group(function () {
+
+    Route::get('/dashboard/personal', [DashboardController::class, 'personal'])
+        ->middleware('role:personal');
+
+    Route::get('/dashboard/company', [DashboardController::class, 'company'])
+        ->middleware('role:company');
+
+    Route::get('/dashboard/admin', [DashboardController::class, 'admin'])
+        ->middleware('role:admin');
+
+});
+
 //Profile Routes
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
@@ -104,17 +118,4 @@ Route::middleware([
         PostController::class,
         'close'
     ]);
-});
-//dashboard
-Route::middleware(['auth:sanctum'])->group(function () {
-
-    Route::get('/dashboard/personal', [DashboardController::class, 'personal'])
-        ->middleware('RoleMiddleware:personal');
-
-    Route::get('/dashboard/company', [DashboardController::class, 'company'])
-        ->middleware('RoleMiddleware:company');
-
-    Route::get('/dashboard/admin', [DashboardController::class, 'admin'])
-        ->middleware('RoleMiddleware:admin');
-
 });
