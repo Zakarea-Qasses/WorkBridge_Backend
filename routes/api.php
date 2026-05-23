@@ -6,12 +6,13 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Api\CompanyController;
+use App\Http\Controllers\Api\ConversationController;
 use App\Http\Controllers\Api\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\Api\UserNotificationController;
 use App\Http\Controllers\Api\UserProjectController;
-use App\Http\Controllers\UserNotificationController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -113,4 +114,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/projects', [UserProjectController::class, 'store']);
     Route::put('/projects/{id}', [UserProjectController::class, 'update']);
     Route::delete('/projects/{id}', [UserProjectController::class, 'destroy']);
+});
+
+//Chat Routes
+Route::middleware('auth:sanctum')->group(function () {
+
+    Route::post('/conversations/start', [ConversationController::class, 'start']);
+
+    Route::get('/conversations', [ConversationController::class, 'myConversations']);
+
+    Route::get('/conversations/{conversation}/messages', [ConversationController::class, 'messages']);
+
+    Route::post('/conversations/{conversation}/messages', [ConversationController::class, 'sendMessage']);
+
 });
