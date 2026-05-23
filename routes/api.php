@@ -10,7 +10,8 @@ use App\Http\Controllers\Api\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ServiceController;
-use App\Http\Controllers\UserNotificationController;
+use App\Http\Controllers\Api\UserNotificationController;
+use App\Http\Controllers\Api\ConversationController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -102,4 +103,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/services', [ServiceController::class, 'store']);
     Route::put('/services/{id}', [ServiceController::class, 'update']);
     Route::delete('/services/{id}', [ServiceController::class, 'destroy']);
+});
+//Chat Routes
+Route::middleware('auth:sanctum')->group(function () {
+
+    Route::post('/conversations/start', [ConversationController::class, 'start']);
+
+    Route::get('/conversations', [ConversationController::class, 'myConversations']);
+
+    Route::get('/conversations/{conversation}/messages', [ConversationController::class, 'messages']);
+
+    Route::post('/conversations/{conversation}/messages', [ConversationController::class, 'sendMessage']);
+
 });
