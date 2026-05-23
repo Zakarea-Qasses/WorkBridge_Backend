@@ -17,5 +17,8 @@ class Skill extends Model
     {
      return $this->belongsToMany(Company::class,'company_skill');
     }
-
+    
+    public function projects(){
+        return $this->belongsToMany(UserProject::class,'project_skill');
+    }
 }

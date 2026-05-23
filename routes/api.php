@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\Api\UserProjectController;
 use App\Http\Controllers\UserNotificationController;
 
 Route::get('/user', function (Request $request) {
@@ -102,4 +103,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/services', [ServiceController::class, 'store']);
     Route::put('/services/{id}', [ServiceController::class, 'update']);
     Route::delete('/services/{id}', [ServiceController::class, 'destroy']);
+});
+
+//Project Routes
+Route::get('/projects', [UserProjectController::class, 'index']);
+Route::get('/projects/{id}', [UserProjectController::class, 'show']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/projects', [UserProjectController::class, 'store']);
+    Route::put('/projects/{id}', [UserProjectController::class, 'update']);
+    Route::delete('/projects/{id}', [UserProjectController::class, 'destroy']);
 });
