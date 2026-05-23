@@ -33,10 +33,9 @@ public function run(): void
         'Tech News',
     ];
 
-    foreach ($categories as $name) {
-        Category::create([
-            'name' => $name,
-            'slug' => Str::slug($name),
+    foreach($categories as $category){
+        Category::firstOrCreate([
+            'name'=>$category
         ]);
     }
 

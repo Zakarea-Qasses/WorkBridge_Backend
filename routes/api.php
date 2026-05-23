@@ -1,14 +1,15 @@
 <?php
 
+use App\Http\Controllers\Api\CategoryController;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\ProfileController;
-use App\Http\Controllers\Api\PostController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\UserNotificationController;
 
 Route::get('/user', function (Request $request) {
@@ -90,44 +91,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
 });
 
-//Posts & Applications Routes
-Route::middleware([
-    'auth:sanctum',
-    'role:personal'
-])->group(function () {
 
-    Route::get('/posts', [PostController::class, 'index']);
+Route::get('/categories', [CategoryController::class, 'index']);
 
-    Route::get('/posts/{post}', [PostController::class, 'show']);
+//Services Routes
+Route::get('/services', [ServiceController::class, 'index']);
+Route::get('/services/{id}', [ServiceController::class, 'show']);
 
-    Route::post('/posts', [PostController::class, 'store']);
-
-    Route::put('/posts/{post}', [PostController::class, 'update']);
-
-    Route::delete('/posts/{post}', [PostController::class, 'destroy']);
-
- 
-    Route::get('/services', [PostController::class, 'services']);
-
-    Route::get('/projects', [PostController::class, 'projects']);
-
-    Route::patch('/posts/{post}/publish', [
-        PostController::class,
-        'publish'
-    ]);
-
-    Route::patch('/posts/{post}/pause', [
-        PostController::class,
-        'pause'
-    ]);
-
-    Route::patch('/posts/{post}/archive', [
-        PostController::class,
-        'archive'
-    ]);
-
-    Route::patch('/posts/{post}/close', [
-        PostController::class,
-        'close'
-    ]);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/services', [ServiceController::class, 'store']);
+    Route::put('/services/{id}', [ServiceController::class, 'update']);
+    Route::delete('/services/{id}', [ServiceController::class, 'destroy']);
 });

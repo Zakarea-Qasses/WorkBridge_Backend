@@ -11,10 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('category_post', function (Blueprint $table) {
+        Schema::create('services', function (Blueprint $table) {
             $table->id();
-             $table->foreignId('post_id')->constrained('posts')->cascadeOnDelete();
+
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+
             $table->foreignId('category_id')->constrained('categories')->cascadeOnDelete();
+
+            $table->string('title');
+            $table->text('description')->nullable();
+            $table->decimal('price',10,2);
+            $table->integer('delivery_days');
+
             $table->timestamps();
         });
     }
@@ -24,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('post_category_');
+        Schema::dropIfExists('services');
     }
 };
