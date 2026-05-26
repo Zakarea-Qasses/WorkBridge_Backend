@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\ConversationController;
 use App\Http\Controllers\Api\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\LocationController;
+use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\ServiceRequestController;
 use App\Http\Controllers\Api\UserNotificationController;
@@ -96,6 +98,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
 });
 
+//Location Routes
+Route::get('/governorates',[LocationController::class,'governorates']);
+Route::get('/governorates/{id}/cities',[LocationController::class,'cities']);
 
 Route::get('/categories', [CategoryController::class, 'index']);
 
@@ -153,4 +158,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/service-requests/{id}/accept', [ServiceRequestController::class, 'accept']);
     Route::post('/service-requests/{id}/reject', [ServiceRequestController::class, 'reject']);
+});
+
+//Report Routes
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/reports', [ReportController::class, 'store']);
+});
+
+Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+    Route::get('/reports', [ReportController::class, 'index']);
+    Route::put('/reports/{id}/decision', [ReportController::class, 'adminDecision']);
 });
