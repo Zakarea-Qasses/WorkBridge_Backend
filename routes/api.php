@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ApplicationController;
 use App\Http\Controllers\Api\CategoryController;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Auth\AuthController;
@@ -11,8 +12,10 @@ use App\Http\Controllers\Api\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\Api\ServiceRequestController;
 use App\Http\Controllers\Api\UserNotificationController;
 use App\Http\Controllers\Api\UserProjectController;
+
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -127,4 +130,27 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/conversations/{conversation}/messages', [ConversationController::class, 'sendMessage']);
 
+});
+
+//Application Routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/projects/{projectId}/applications', [ApplicationController::class, 'store']);
+
+    Route::get('/applications/received', [ApplicationController::class, 'received']);
+    Route::get('/applications/my', [ApplicationController::class, 'myApplications']);
+
+    Route::post('/applications/{id}/accept', [ApplicationController::class, 'accept']);
+    Route::post('/applications/{id}/reject', [ApplicationController::class, 'reject']);
+});
+
+//Service Requests Routes
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/services/{service}/requests', [ServiceRequestController::class, 'store']);
+
+    Route::get('/service-requests/received', [ServiceRequestController::class, 'received']);
+    Route::get('/service-requests/my', [ServiceRequestController::class, 'myRequests']);
+
+    Route::post('/service-requests/{id}/accept', [ServiceRequestController::class, 'accept']);
+    Route::post('/service-requests/{id}/reject', [ServiceRequestController::class, 'reject']);
 });

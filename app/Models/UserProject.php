@@ -41,5 +41,9 @@ class UserProject extends Model
     {
         return $this->belongsToMany(Skill::class, 'project_skill');
     }
+
+    public function applications(){
+        return $this->hasMany(Application::class);
+    }
 }
 
