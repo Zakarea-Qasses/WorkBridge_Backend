@@ -17,7 +17,7 @@ use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\ServiceRequestController;
 use App\Http\Controllers\Api\UserNotificationController;
 use App\Http\Controllers\Api\UserProjectController;
-
+use App\Http\Controllers\Api\JobPostController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -169,4 +169,17 @@ Route::middleware(['auth:sanctum'])->group(function () {
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::get('/reports', [ReportController::class, 'index']);
     Route::put('/reports/{id}/decision', [ReportController::class, 'adminDecision']);
+});
+//jobpost
+// Job Posts Routes
+Route::get('/jobs', [JobPostController::class, 'index']);
+Route::get('/jobs/{id}', [JobPostController::class, 'show']);
+
+Route::middleware(['auth:sanctum', 'role:company'])->group(function () {
+    Route::get('/company/jobs', [JobPostController::class, 'myJobs']);
+    Route::post('/jobs', [JobPostController::class, 'store']);
+    Route::put('/jobs/{id}', [JobPostController::class, 'update']);
+    Route::post('/jobs/{id}/pause', [JobPostController::class, 'pause']);
+    Route::post('/jobs/{id}/activate', [JobPostController::class, 'activate']);
+    Route::delete('/jobs/{id}', [JobPostController::class, 'destroy']);
 });
