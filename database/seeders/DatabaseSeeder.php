@@ -16,13 +16,24 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            CategorySeeder::class
+            CategorySeeder::class,
+            AdminUserSeeder::class,
         ]);
         // User::factory(10)->create();
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $testUser = User::updateOrCreate(
+            ['email' => 'test@example.com'],
+            [
+                'name' => 'Test User',
+                'password' => 'password',
+                'role' => 'personal',
+                'status' => 'active',
+                'email_verified_at' => now(),
+            ]
+        );
+
+        $testUser->profile()->firstOrCreate([
+            'user_id' => $testUser->id,
         ]);
     }
 }

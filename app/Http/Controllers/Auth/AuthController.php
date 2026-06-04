@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\EmailVerificationOtp;
 use App\Models\User;
+use App\Models\UserNotification;
 use App\Notifications\VerifyEmailOtpNotification;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Events\Verified;
@@ -22,17 +23,17 @@ class AuthController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'unique:users,email'],
             'password' => ['required', 'min:8', 'confirmed'],
-            'role' => ['required', 'in:personal,company,admin'],
+            'role' => ['required', 'in:personal,company'],
            
         ]);
 
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => $data['password'],
-            'role' => $data['role'],
-      
-        ]);
+       $user = User::create([
+    'name' => $data['name'],
+    'email' => $data['email'],
+    'password' => $data['password'],
+    'role' => $data['role'],
+    'status' => 'pending_review',
+       ]);
         
 
         if($user->role==='personal'){
@@ -60,6 +61,19 @@ class AuthController extends Controller
         
         $user->notify(new VerifyEmailOtpNotification($otp));
 
+        if ($user->role !== 'admin') {
+            $admins = User::where('role', 'admin')->get();
+
+            foreach ($admins as $admin) {
+                UserNotification::create([
+                    'user_id' => $admin->id,
+                    'type' => 'new_account_review',
+                    'title' => 'حساب جديد بانتظار المراجعة',
+                    'message' => $user->name . ' قام بإنشاء حساب جديد ويحتاج إلى مراجعة.',
+                ]);
+            }
+        }
+
         return response()->json([
             'message' => 'تم إنشاء الحساب. يرجى تأكيد البريد الإلكتروني.',
             'user' => $user,
@@ -84,6 +98,18 @@ class AuthController extends Controller
         if (!$user->hasVerifiedEmail()) {
             return response()->json([
                 'message' => 'يجب تأكيد البريد الإلكتروني أولاً'
+            ], 403);
+        }
+
+        if ($user->status === 'blocked') {
+            return response()->json([
+                'message' => 'تم حظر هذا الحساب من قبل الإدارة'
+            ], 403);
+        }
+
+        if ($user->role !== 'admin' && $user->status !== 'active') {
+            return response()->json([
+                'message' => 'حسابك بانتظار مراجعة الإدارة'
             ], 403);
         }
 

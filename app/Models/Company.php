@@ -13,6 +13,7 @@ class Company extends Model
         'logo',
         'website',
         'location',
+        'phone',
         'description',
         'is_verified',
     ];

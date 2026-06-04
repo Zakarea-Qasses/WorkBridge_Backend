@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\ApplicationController;
+use App\Http\Controllers\Api\AdminUserController as AdminUsersController;
 use App\Http\Controllers\Api\CategoryController;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Auth\AuthController;
@@ -18,7 +19,6 @@ use App\Http\Controllers\Api\ServiceRequestController;
 use App\Http\Controllers\Api\UserNotificationController;
 use App\Http\Controllers\Api\UserProjectController;
 use App\Http\Controllers\Api\JobPostController;
-
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
@@ -169,6 +169,19 @@ Route::middleware(['auth:sanctum'])->group(function () {
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::get('/reports', [ReportController::class, 'index']);
     Route::put('/reports/{id}/decision', [ReportController::class, 'adminDecision']);
+});
+
+//Admin Users Management Routes
+Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
+    Route::get('/users', [AdminUsersController::class, 'index']);
+    Route::get('/users/review-board', [AdminUsersController::class, 'reviewBoard']);
+    Route::get('/users/{id}', [AdminUsersController::class, 'show']);
+
+    Route::post('/users/{id}/under-review', [AdminUsersController::class, 'markUnderReview']);
+    Route::post('/users/{id}/approve', [AdminUsersController::class, 'approve']);
+    Route::post('/users/{id}/block', [AdminUsersController::class, 'block']);
+
+    Route::delete('/users/{id}', [AdminUsersController::class, 'destroy']);
 });
 //jobpost
 // Job Posts Routes
