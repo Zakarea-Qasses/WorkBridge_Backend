@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Project;
 use App\Models\Report;
 use App\Models\Service;
 use App\Models\User;

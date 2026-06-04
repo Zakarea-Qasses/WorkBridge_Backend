@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Application;
-use App\Models\Project;
 use App\Models\UserNotification;
 use App\Models\UserProject;
 use Illuminate\Http\Request;

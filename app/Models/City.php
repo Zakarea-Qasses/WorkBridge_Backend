@@ -9,6 +9,6 @@ class City extends Model
     protected $fillable = ['name','governorate_id'];
     public function governorate()
     {
-        $this->belongsTo(Governorate::class);
+       return $this->belongsTo(Governorate::class);
     }
 }

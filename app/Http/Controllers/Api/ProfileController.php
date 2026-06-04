@@ -49,7 +49,7 @@ class ProfileController extends Controller
             'name'=>$data['name'] ?? $profile->name,
             'description'=>$data['description'] ?? $profile->description,
             'bio'=>$data['bio']??$profile->bio,
-            'address'=>$data['addess'] ?? $profile->address,
+            'address'=>$data['address'] ?? $profile->address,
             'phone'=>$data['phone']??$profile->phone,
         ]);
 

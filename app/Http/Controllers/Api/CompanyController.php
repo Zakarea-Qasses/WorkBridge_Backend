@@ -49,7 +49,7 @@ class CompanyController extends Controller
          $company->update([
             'company_name'=>$data['company_name'] ?? $company->name,
             'description'=>$data['description'] ?? $company->description,
-            'website'=>$data['website']??$company->bio,
+            'website'=>$data['website']??$company->website,
             'location'=>$data['location'] ?? $company->location,
             'phone'=>$data['phone']??$company->phone,
         ]);

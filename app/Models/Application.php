@@ -15,7 +15,7 @@ class Application extends Model
         'status',
     ];
 
-    public function userproject()
+    public function project()
     {
         return $this->belongsTo(UserProject::class);
     }
