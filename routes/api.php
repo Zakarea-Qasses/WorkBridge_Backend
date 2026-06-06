@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\ApplicationController;
-use App\Http\Controllers\Api\AdminUserController as AdminUsersController;
+use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\CategoryController;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Auth\AuthController;
@@ -19,43 +19,64 @@ use App\Http\Controllers\Api\ServiceRequestController;
 use App\Http\Controllers\Api\UserNotificationController;
 use App\Http\Controllers\Api\UserProjectController;
 use App\Http\Controllers\Api\JobPostController;
+
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
+/*
+|--------------------------------------------------------------------------
+| Auth Routes
+|--------------------------------------------------------------------------
+*/
 
-//Auth Routes
+
+// |----Register & Login---|
+
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-Route::post('/email/verify', [AuthController::class, 'verify']);
 
+// |----Verify Email---|
+Route::post('/email/verify', [AuthController::class, 'verify']);
 Route::post('/email/resend', [AuthController::class, 'resend']);
 
+
+// |----Forgot Password---|
+Route::post('/forgot-password', [ForgotPasswordController::class, 'forgotPassword']);
+Route::post('/reset-password', [ResetPasswordController::class, 'resetPassword']);
+
+Route::get('/reset-password/{token}', function ($token) {
+    return response()->json([
+        'token' => $token,
+    ]);
+})->name('password.reset');
+
+
+// |----Logout & User Info---|
 Route::middleware('auth:sanctum')->group(function () {
+
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::middleware('verified')->group(function () {
         Route::get('/me', function (Request $request) {
             return response()->json([
-                'user'=> $request->user()
+                'user' => $request->user(),
             ]);
         });
     });
+
 });
 
-//Reset Password Routes
-Route::post('/forgot-password', [ForgotPasswordController::class, 'forgotPassword']);
-Route::post('/reset-password', [ResetPasswordController::class, 'resetPassword']);
+/*
+|--------------------------------------------------------------------------
+| Api Routes
+|--------------------------------------------------------------------------
+*/
 
-Route::get('/reset-password/{token}',function($token){
-    return response()->json([
-        'token'=>$token
-    ]);
-})->name('password.reset');
+// |----Dashboard---|
 
-//dashboard
-Route::middleware(['auth:sanctum'])->group(function () {
+Route::middleware(['auth:sanctum','verified'])->group(function () {
 
     Route::get('/dashboard/personal', [DashboardController::class, 'personal'])
         ->middleware('role:personal');
@@ -68,7 +89,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 });
 
-//Profile Routes
+
+// |----Profile---|
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'show'])
@@ -87,8 +109,8 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
 });
 
-//Notification Routes
 
+// |----Notifications---|
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/notifications', [UserNotificationController::class, 'index']);
@@ -98,7 +120,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
 });
 
-//Location Routes
+
+// |----Location---|
 Route::get('/governorates',[LocationController::class,'governorates']);
 Route::get('/governorates/{id}/cities',[LocationController::class,'cities']);
 

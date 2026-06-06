@@ -4,26 +4,47 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\RateLimiter;
 
 class ForgotPasswordController extends Controller
 {
     public function forgotPassword(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email'
+        $data = $request->validate([
+            'email' => ['required', 'email']
         ]);
 
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+        $rateKey = 'forgot-password:' . $request->ip() . ':' . strtolower($data['email']);
 
-        return $status === Password::RESET_LINK_SENT
-            ? response()->json([
-                'message' => __($status)
-            ])
-            : response()->json([
-                'message' => __($status)
-            ], 400);
+        if (RateLimiter::tooManyAttempts($rateKey, 3)) {
+            return response()->json([
+                'message' => 'تم إرسال طلبات كثيرة، يرجى المحاولة لاحقاً'
+            ], 429);
+        }
+
+        RateLimiter::hit($rateKey, 600); // 3 محاولات كل 10 دقائق
+
+        $status = Password::sendResetLink([
+            'email' => $data['email']
+        ]);
+
+        if ($status !== Password::RESET_LINK_SENT) {
+            Log::warning('Password reset link request failed', [
+                'email' => $data['email'],
+                'ip' => $request->ip(),
+                'status' => $status
+            ]);
+        }
+
+        /*
+         مهم:
+         نرجع نفس الرسالة حتى لو الإيميل غير موجود
+         حتى ما نكشف إذا الحساب موجود أو لا
+        */
+        return response()->json([
+            'message' => 'إذا كان البريد مسجلاً لدينا، سيتم إرسال رابط إعادة تعيين كلمة المرور'
+        ], 200);
     }
 }
