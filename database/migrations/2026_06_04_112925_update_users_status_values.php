@@ -7,7 +7,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement("
+          DB::statement("
             ALTER TABLE users
             MODIFY status ENUM('pending_review', 'under_review', 'active', 'blocked')
             DEFAULT 'pending_review'

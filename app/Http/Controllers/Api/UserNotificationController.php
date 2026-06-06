@@ -8,17 +8,23 @@ use Illuminate\Http\Request;
 
 class UserNotificationController extends Controller
 {
+    /**
+     * عرض إشعارات المستخدم الحالي
+     */
     public function index(Request $request)
     {
         $notifications = UserNotification::where('user_id', $request->user()->id)
             ->latest()
-            ->get();
+            ->paginate(20);
 
         return response()->json([
             'notifications' => $notifications
-        ]);
+        ], 200);
     }
 
+    /**
+     * عدد الإشعارات غير المقروءة
+     */
     public function unreadCount(Request $request)
     {
         $count = UserNotification::where('user_id', $request->user()->id)
@@ -27,35 +33,72 @@ class UserNotificationController extends Controller
 
         return response()->json([
             'unread_count' => $count
-        ]);
+        ], 200);
     }
 
+    /**
+     * تعليم إشعار واحد كمقروء
+     */
     public function markAsRead(Request $request, $id)
     {
         $notification = UserNotification::where('user_id', $request->user()->id)
             ->where('id', $id)
-            ->firstOrFail();
+            ->first();
 
-        $notification->update([
-            'read_at' => now()
-        ]);
+        if (!$notification) {
+            return response()->json([
+                'message' => 'الإشعار غير موجود'
+            ], 404);
+        }
+
+        if ($notification->read_at === null) {
+            $notification->update([
+                'read_at' => now()
+            ]);
+        }
 
         return response()->json([
-            'message' => 'Notification marked as read',
-            'notification' => $notification
-        ]);
+            'message' => 'تم تعليم الإشعار كمقروء',
+            'notification' => $notification->fresh()
+        ], 200);
     }
 
+    /**
+     * تعليم كل الإشعارات كمقروءة
+     */
     public function markAllAsRead(Request $request)
     {
-        UserNotification::where('user_id', $request->user()->id)
+        $updatedCount = UserNotification::where('user_id', $request->user()->id)
             ->whereNull('read_at')
             ->update([
                 'read_at' => now()
             ]);
 
         return response()->json([
-            'message' => 'All notifications marked as read'
-        ]);
+            'message' => 'تم تعليم جميع الإشعارات كمقروءة',
+            'updated_count' => $updatedCount
+        ], 200);
+    }
+
+    /**
+     * حذف إشعار واحد - اختياري لكنه مفيد
+     */
+    public function destroy(Request $request, $id)
+    {
+        $notification = UserNotification::where('user_id', $request->user()->id)
+            ->where('id', $id)
+            ->first();
+
+        if (!$notification) {
+            return response()->json([
+                'message' => 'الإشعار غير موجود'
+            ], 404);
+        }
+
+        $notification->delete();
+
+        return response()->json([
+            'message' => 'تم حذف الإشعار بنجاح'
+        ], 200);
     }
 }

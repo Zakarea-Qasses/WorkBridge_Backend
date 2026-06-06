@@ -6,9 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\Message;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 
 class ConversationController extends Controller
 {
+    /**
+     * بدء محادثة جديدة أو جلب محادثة موجودة
+     */
     public function start(Request $request)
     {
         $data = $request->validate([
@@ -33,28 +38,51 @@ class ConversationController extends Controller
         ]);
 
         return response()->json([
-            'conversation' => $conversation->load(['user1:id,name', 'user2:id,name']),
-        ]);
+            'message' => 'تم فتح المحادثة بنجاح',
+            'conversation' => $conversation->load([
+                'user1:id,name',
+                'user2:id,name'
+            ]),
+        ], 200);
     }
 
+    /**
+     * عرض محادثات المستخدم الحالي
+     */
     public function myConversations(Request $request)
     {
         $userId = $request->user()->id;
 
         $conversations = Conversation::where(function ($query) use ($userId) {
-            $query->where('user1_id', $userId)
-                ->orWhere('user2_id', $userId);
-        })
-            ->with(['user1:id,name', 'user2:id,name'])
-            ->latest('last_message_at')
-            ->latest()
-            ->get();
+                $query->where('user1_id', $userId)
+                    ->orWhere('user2_id', $userId);
+            })
+            ->with([
+                'user1:id,name',
+                'user2:id,name',
+                'messages' => function ($query) {
+                    $query->latest()->limit(1);
+                },
+                'messages.sender:id,name',
+            ])
+            ->withCount([
+                'messages as unread_count' => function ($query) use ($userId) {
+                    $query->where('sender_id', '!=', $userId)
+                          ->whereNull('read_at');
+                }
+            ])
+            ->orderByDesc('last_message_at')
+            ->orderByDesc('created_at')
+            ->paginate(20);
 
         return response()->json([
             'conversations' => $conversations,
-        ]);
+        ], 200);
     }
 
+    /**
+     * عرض رسائل محادثة معينة
+     */
     public function messages(Request $request, Conversation $conversation)
     {
         $this->checkUserInConversation($request, $conversation);
@@ -66,12 +94,25 @@ class ConversationController extends Controller
 
         return response()->json([
             'messages' => $messages,
-        ]);
+        ], 200);
     }
 
+    /**
+     * إرسال رسالة داخل محادثة
+     */
     public function sendMessage(Request $request, Conversation $conversation)
     {
         $this->checkUserInConversation($request, $conversation);
+
+        $user = $request->user();
+
+        $rateKey = 'send-message:' . $user->id;
+
+        if (RateLimiter::tooManyAttempts($rateKey, 20)) {
+            return response()->json([
+                'message' => 'لقد أرسلت رسائل كثيرة، يرجى الانتظار قليلاً'
+            ], 429);
+        }
 
         $data = $request->validate([
             'content' => ['required', 'string', 'max:10000'],
@@ -80,7 +121,7 @@ class ConversationController extends Controller
 
         $message = Message::create([
             'conversation_id' => $conversation->id,
-            'sender_id' => $request->user()->id,
+            'sender_id' => $user->id,
             'content' => $data['content'],
             'type' => $data['type'] ?? 'text',
         ]);
@@ -89,17 +130,63 @@ class ConversationController extends Controller
             'last_message_at' => now(),
         ]);
 
+        RateLimiter::hit($rateKey, 60);
+
         return response()->json([
             'message' => 'تم إرسال الرسالة بنجاح',
             'data' => $message->load('sender:id,name'),
         ], 201);
     }
+    /**
+     * تعليم رسائل المحادثة كمقروءة
+     */
+    public function markAsRead(Request $request, Conversation $conversation)
+    {
+        $this->checkUserInConversation($request, $conversation);
 
+        $updatedCount = $conversation->messages()
+            ->where('sender_id', '!=', $request->user()->id)
+            ->whereNull('read_at')
+            ->update([
+                'read_at' => now(),
+            ]);
+
+        return response()->json([
+            'message' => 'تم تعليم الرسائل كمقروءة',
+            'updated_count' => $updatedCount,
+        ], 200);
+    }
+
+    /**
+     * حذف محادثة من طرف المستخدم الحالي - اختياري
+     * ملاحظة: هذا يحذفها نهائياً من قاعدة البيانات، فقط استخدميه إذا هذا المطلوب.
+     */
+    public function destroy(Request $request, Conversation $conversation)
+    {
+        $this->checkUserInConversation($request, $conversation);
+
+        $conversation->messages()->delete();
+        $conversation->delete();
+
+        return response()->json([
+            'message' => 'تم حذف المحادثة بنجاح',
+        ], 200);
+    }
+
+    /**
+     * التحقق أن المستخدم طرف في المحادثة
+     */
     private function checkUserInConversation(Request $request, Conversation $conversation): void
     {
         $userId = $request->user()->id;
 
         if ($conversation->user1_id !== $userId && $conversation->user2_id !== $userId) {
+            Log::warning('Unauthorized conversation access attempt', [
+                'user_id' => $userId,
+                'conversation_id' => $conversation->id,
+                'ip' => $request->ip(),
+            ]);
+
             abort(403, 'غير مسموح لك بالدخول لهذه المحادثة');
         }
     }

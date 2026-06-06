@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\Api\ApplicationController;
 use App\Http\Controllers\Api\AdminUserController;
+use App\Http\Controllers\Api\ApplicationController;
 use App\Http\Controllers\Api\CategoryController;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Auth\AuthController;
@@ -105,19 +105,17 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
     Route::put('/company', [CompanyController::class, 'update'])
         ->middleware('role:company');
- 
 
 });
 
 
 // |----Notifications---|
-Route::middleware('auth:sanctum')->group(function () {
-
+Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::get('/notifications', [UserNotificationController::class, 'index']);
     Route::get('/notifications/unread-count', [UserNotificationController::class, 'unreadCount']);
     Route::post('/notifications/{id}/read', [UserNotificationController::class, 'markAsRead']);
     Route::post('/notifications/read-all', [UserNotificationController::class, 'markAllAsRead']);
-
+    Route::delete('/notifications/{id}', [UserNotificationController::class, 'destroy']);
 });
 
 
@@ -147,17 +145,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/projects/{id}', [UserProjectController::class, 'destroy']);
 });
 
-//Chat Routes
-Route::middleware('auth:sanctum')->group(function () {
 
+// |---Conversation---|
+Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::post('/conversations/start', [ConversationController::class, 'start']);
-
     Route::get('/conversations', [ConversationController::class, 'myConversations']);
-
     Route::get('/conversations/{conversation}/messages', [ConversationController::class, 'messages']);
-
     Route::post('/conversations/{conversation}/messages', [ConversationController::class, 'sendMessage']);
-
+    Route::post('/conversations/{conversation}/read', [ConversationController::class, 'markAsRead']);
+    Route::delete('/conversations/{conversation}', [ConversationController::class, 'destroy']);
 });
 
 //Application Routes
@@ -196,15 +192,15 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
 
 //Admin Users Management Routes
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
-    Route::get('/users', [AdminUsersController::class, 'index']);
-    Route::get('/users/review-board', [AdminUsersController::class, 'reviewBoard']);
-    Route::get('/users/{id}', [AdminUsersController::class, 'show']);
+    Route::get('/users', [AdminUserController::class, 'index']);
+    Route::get('/users/review-board', [AdminUserController::class, 'reviewBoard']);
+    Route::get('/users/{id}', [AdminUserController::class, 'show']);
 
-    Route::post('/users/{id}/under-review', [AdminUsersController::class, 'markUnderReview']);
-    Route::post('/users/{id}/approve', [AdminUsersController::class, 'approve']);
-    Route::post('/users/{id}/block', [AdminUsersController::class, 'block']);
+    Route::post('/users/{id}/under-review', [AdminUserController::class, 'markUnderReview']);
+    Route::post('/users/{id}/approve', [AdminUserController::class, 'approve']);
+    Route::post('/users/{id}/block', [AdminUserController::class, 'block']);
 
-    Route::delete('/users/{id}', [AdminUsersController::class, 'destroy']);
+    Route::delete('/users/{id}', [AdminUserController::class, 'destroy']);
 });
 //jobpost
 // Job Posts Routes
