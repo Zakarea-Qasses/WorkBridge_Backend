@@ -47,6 +47,12 @@ class AuthController extends Controller
         } elseif ($user->role === 'company') {
             $user->company()->create(['company_name' => $user->name]);
         }
+        
+        $user->wallet()->create([
+            'balance'=>0,
+            'currency'=>'USD',
+            'status'=>'active'
+        ]);
 
         $otp = rand(100000, 999999);
         EmailVerificationOtp::updateOrCreate(
