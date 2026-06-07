@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\Message;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 
 class ConversationController extends Controller
@@ -181,12 +180,6 @@ class ConversationController extends Controller
         $userId = $request->user()->id;
 
         if ($conversation->user1_id !== $userId && $conversation->user2_id !== $userId) {
-            Log::warning('Unauthorized conversation access attempt', [
-                'user_id' => $userId,
-                'conversation_id' => $conversation->id,
-                'ip' => $request->ip(),
-            ]);
-
             abort(403, 'غير مسموح لك بالدخول لهذه المحادثة');
         }
     }

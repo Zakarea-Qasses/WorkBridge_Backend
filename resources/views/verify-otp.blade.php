@@ -134,7 +134,7 @@
 
             <tr>
                 <td class="content">
-                    <h2>مرحباً {{ $userName }} 👋</h2>
+                    <h2>مرحباً {{ $userName }}</h2>
 
                     <p>
                         شكراً لإنشاء حسابك في منصة WorkBridge.

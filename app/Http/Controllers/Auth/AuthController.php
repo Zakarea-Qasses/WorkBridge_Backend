@@ -31,7 +31,7 @@ class AuthController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'unique:users,email'],
             'password' => ['required', 'min:8', 'confirmed'],
-            'role' => ['required', 'in:personal,company'],
+            'role' => ['required', Rule::in(['personal','company'])],
         ]);
 
         $user = User::create([
@@ -64,7 +64,7 @@ class AuthController extends Controller
                 'updated_at' => now(),
             ]
         );
-
+        /
         try {
             $user->notify(new VerifyEmailOtpNotification($otp));
         } catch (\Exception $e) {
@@ -88,7 +88,7 @@ class AuthController extends Controller
             }
         }
 
-        RateLimiter::hit($rateKey, 600); // 10 دقائق cooldown
+        RateLimiter::hit($rateKey, 600);
 
         return response()->json([
             'message' => 'تم إنشاء الحساب. يرجى تأكيد البريد الإلكتروني.',
@@ -181,11 +181,6 @@ class AuthController extends Controller
         if ($otpRecord->expires_at->isPast()) return response()->json(['message' => 'انتهت صلاحية الكود'], 403);
 
         if (!Hash::check($data['otp'], $otpRecord->otp)) {
-            Log::warning('OTP verification failed', [
-                'user_id' => $user->id,
-                'email' => $user->email,
-                'ip' => $request->ip()
-            ]);
             RateLimiter::hit($rateKey, 600);
             return response()->json(['message' => 'كود التحقق غير صحيح'], 403);
         }
@@ -233,11 +228,6 @@ class AuthController extends Controller
         try {
             $user->notify(new VerifyEmailOtpNotification($otp));
         } catch (\Exception $e) {
-            Log::error('Failed to send OTP notification', [
-                'user_id' => $user->id,
-                'email' => $user->email,
-                'error' => $e->getMessage()
-            ]);
             return response()->json(['message' => 'تم إنشاء الحساب لكن فشل إرسال كود التحقق'], 500);
         }
 
@@ -255,11 +245,6 @@ class AuthController extends Controller
             $request->user()->currentAccessToken()->delete();
             return response()->json(['message' => 'تم تسجيل الخروج بنجاح'], 200);
         } catch (\Exception $e) {
-            Log::error('Logout failed', [
-                'user_id' => $request->user()?->id,
-                'email' => $request->user()?->email ?? 'unknown',
-                'error' => $e->getMessage()
-            ]);
             return response()->json(['message' => 'حدث خطأ أثناء تسجيل الخروج'], 500);
         }
     }

@@ -38,7 +38,15 @@ return new class extends Migration
             ->nullable();
 
             $table->timestamps();
-        });
+
+         $table->enum('direction', ['credit', 'debit'])
+                ->default('credit')
+                ->after('type');
+
+            $table->enum('status', ['completed', 'failed', 'pending'])
+                ->default('completed')
+                ->after('balance_after');
+      });
     }
 
     /**

@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -55,12 +54,6 @@ class ResetPasswordController extends Controller
         }
 
         RateLimiter::hit($rateKey, 600); // زيادة عدد المحاولات الفاشلة
-
-        Log::warning('Password reset failed', [
-            'email' => $data['email'],
-            'ip' => $request->ip(),
-            'status' => $status
-        ]);
 
         return response()->json([
             'message' => 'رابط إعادة التعيين غير صحيح أو منتهي الصلاحية'
