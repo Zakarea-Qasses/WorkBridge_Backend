@@ -9,9 +9,9 @@ use App\Models\UserNotification;
 use App\Notifications\VerifyEmailOtpNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Auth\Events\Verified;
+use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
 {
@@ -50,8 +50,8 @@ class AuthController extends Controller
         
         $user->wallet()->create([
             'balance'=>0,
-            'currency'=>'USD',
-            'status'=>'active'
+            'type'=>'user',
+            'is_active'=>true,
         ]);
 
         $otp = rand(100000, 999999);
@@ -64,15 +64,13 @@ class AuthController extends Controller
                 'updated_at' => now(),
             ]
         );
-        /
+
         try {
             $user->notify(new VerifyEmailOtpNotification($otp));
         } catch (\Exception $e) {
-            Log::error('Failed to send OTP notification', [
-                'user_id' => $user->id,
-                'email' => $user->email,
-                'error' => $e->getMessage()
-            ]);
+            return response()->json([
+                'message' => 'تم إنشاء الحساب لكن فشل إرسال كود التحقق'
+            ], 500);
         }
 
         // إشعار الأدمن بحساب جديد

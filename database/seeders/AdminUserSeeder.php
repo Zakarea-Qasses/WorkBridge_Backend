@@ -22,11 +22,8 @@ class AdminUserSeeder extends Seeder
         );
 
         Wallet::updateOrCreate(
-            [
-                'type'=>'admin',
-                'balance'=>0,
-                'is_active'=>true
-            ]
+            ['type'=>'admin'],
+            ['balance'=>0, 'is_active'=>true]
         );
     }
 }

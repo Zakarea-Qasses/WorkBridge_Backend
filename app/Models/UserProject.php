@@ -15,6 +15,7 @@ class UserProject extends Model
         'description',
         'budget',
         'duration_days',
+        'status',
     ];
 
     public function user()
@@ -46,4 +47,3 @@ class UserProject extends Model
         return $this->hasMany(Application::class);
     }
 }
-

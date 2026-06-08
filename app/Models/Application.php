@@ -17,7 +17,7 @@ class Application extends Model
 
     public function project()
     {
-        return $this->belongsTo(UserProject::class);
+        return $this->belongsTo(UserProject::class, 'user_project_id');
     }
 
     public function user()

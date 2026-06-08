@@ -6,15 +6,20 @@ use App\Http\Controllers\Controller;
 use App\Models\Service;
 use App\Models\ServiceRequest;
 use App\Models\UserNotification;
+use App\Services\ContractService;
 use Illuminate\Http\Request;
 
 class ServiceRequestController extends Controller
 {
+    public function __construct(
+        protected ContractService $contractService
+    ) {}
+
     public function store(Request $request, $serviceId)
     {
         $user = $request->user();
 
-        if ($user->role !== 'personal') {
+        if (! in_array($user->role, ['personal', 'company'], true)) {
             return response()->json([
                 'message' => 'فقط المستخدم الشخصي يمكنه طلب خدمة'
             ], 403);
@@ -104,6 +109,8 @@ class ServiceRequestController extends Controller
             'status' => 'accepted'
         ]);
 
+        $contract = $this->contractService->createFromServiceRequest($serviceRequest);
+
         UserNotification::create([
             'user_id' => $serviceRequest->client_id,
             'type' => 'service_request_accepted',
@@ -113,7 +120,8 @@ class ServiceRequestController extends Controller
 
         return response()->json([
             'message' => 'تم قبول الطلب',
-            'service_request' => $serviceRequest
+            'service_request' => $serviceRequest,
+            'contract' => $contract
         ]);
     }
 

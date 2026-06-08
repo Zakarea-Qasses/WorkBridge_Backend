@@ -78,4 +78,30 @@ class WalletController extends Controller
             'transaction' => $transaction,
         ]);
     }
+
+    public function adminTransactions()
+    {
+        $wallet = \App\Models\Wallet::where('type', 'admin')
+            ->with('transactions')
+            ->firstOrFail();
+
+        return response()->json([
+            'status' => true,
+            'wallet' => $wallet,
+        ]);
+    }
+
+    public function adminEarnings()
+    {
+        $wallet = \App\Models\Wallet::where('type', 'admin')->firstOrFail();
+
+        return response()->json([
+            'status' => true,
+            'balance' => $wallet->balance,
+            'earnings' => $wallet->transactions()
+                ->whereIn('type', ['admin_receive', 'commission'])
+                ->where('direction', 'credit')
+                ->sum('amount'),
+        ]);
+    }
 }

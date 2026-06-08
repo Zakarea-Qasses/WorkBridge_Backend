@@ -6,10 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\UserNotification;
 use App\Models\UserProject;
+use App\Services\ContractService;
 use Illuminate\Http\Request;
 
 class ApplicationController extends Controller
 {
+    public function __construct(
+        protected ContractService $contractService
+    ) {}
+
     public function store(Request $request, $projectId)
     {
         $user = $request->user();
@@ -113,9 +118,11 @@ class ApplicationController extends Controller
             'status' => 'accepted'
         ]);
 
-        Application::where('user_project_id', $application->project_id)
+        Application::where('user_project_id', $application->user_project_id)
             ->where('id', '!=', $application->id)
             ->update(['status' => 'rejected']);
+
+        $contract = $this->contractService->createFromApplication($application);
 
         UserNotification::create([
             'user_id' => $application->user_id,
@@ -126,7 +133,8 @@ class ApplicationController extends Controller
 
         return response()->json([
             'message' => 'تم قبول العرض بنجاح',
-            'application' => $application
+            'application' => $application,
+            'contract' => $contract
         ]);
     }
 

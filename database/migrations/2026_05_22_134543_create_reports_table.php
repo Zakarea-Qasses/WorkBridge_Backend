@@ -15,7 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('reporter_id')->constrained('users')->cascadeOnDelete();
             $table->string('target_type');
-            $table->foreignId('target_id')->constrained('users')->cascadeOnDelete();
+            $table->unsignedBigInteger('target_id');
+            $table->unsignedBigInteger('contract_id')->nullable();
             $table->text('description');
             $table->string('status')->default('pending');
             $table->text('admin_decision')->nullable();

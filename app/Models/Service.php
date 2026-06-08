@@ -12,7 +12,8 @@ class Service extends Model
         'title',
         'description',
         'price',
-        'delivery_days'
+        'delivery_days',
+        'status',
     ];
 
     public function user(){

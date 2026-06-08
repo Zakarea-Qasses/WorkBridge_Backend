@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Review;
 use App\Models\Service;
 use Illuminate\Http\Request;
 
@@ -13,7 +14,7 @@ class ServiceController extends Controller
         $services = Service::with([
             'user:id,name,role',
             'category:id,name'
-        ])->latest()->get();
+        ])->where('status', 'active')->latest()->get();
 
         return response()->json([
             'services' => $services
@@ -25,10 +26,50 @@ class ServiceController extends Controller
         $service = Service::with([
             'user:id,name,role',
             'category:id,name'
-        ])->findOrFail($id);
+        ])->where('status', 'active')->findOrFail($id);
 
         return response()->json([
             'service' => $service
+        ]);
+    }
+
+    public function companyBrowse(Request $request)
+    {
+        if ($request->user()->role !== 'company') {
+            return response()->json(['message' => 'Only company users can browse company services page'], 403);
+        }
+
+        $data = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'category_id' => ['nullable', 'exists:categories,id'],
+        ]);
+
+        $services = Service::with([
+            'user:id,name,role',
+            'category:id,name'
+        ])
+            ->where('status', 'active')
+            ->when($data['search'] ?? null, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('title', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%")
+                        ->orWhereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', "%{$search}%"));
+                });
+            })
+            ->when($data['category_id'] ?? null, fn ($query, $categoryId) => $query->where('category_id', $categoryId))
+            ->latest()
+            ->paginate(9);
+
+        $services->getCollection()->transform(function ($service) {
+            $service->rating_avg = round((float) Review::where('reviewed_user_id', $service->user_id)->avg('rating'), 2);
+            $service->orders_count = $service->requests()->count();
+
+            return $service;
+        });
+
+        return response()->json([
+            'available_services_count' => Service::where('status', 'active')->count(),
+            'services' => $services,
         ]);
     }
 
@@ -57,6 +98,7 @@ class ServiceController extends Controller
             'price' => $data['price'],
             'delivery_days' => $data['delivery_days'],
             'description' => $data['description'] ?? null,
+            'status' => 'active',
         ]);
 
         return response()->json([

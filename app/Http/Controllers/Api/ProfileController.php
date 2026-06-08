@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Review;
 use App\Models\Skill;
 use Illuminate\Http\Request;
 
@@ -26,8 +27,12 @@ class ProfileController extends Controller
             ], 404);
         }
 
+        $reviews = Review::where('reviewed_user_id', $user->id);
+
         return response()->json([
-            'profile' => $profile->load('skills')
+            'profile' => $profile->load('skills'),
+            'rating_avg' => round((float) $reviews->avg('rating'), 2),
+            'reviews_count' => $reviews->count(),
         ], 200);
     }
 

@@ -17,7 +17,7 @@ class UserProjectController extends Controller
 /*            'governorate:id,name',
             'city:id,name,governorate_id',*/
             'skills:id,name',
-        ])->latest()->get();
+        ])->where('status', 'active')->latest()->get();
 
         return response()->json([
             'projects' => $projects
@@ -32,7 +32,7 @@ class UserProjectController extends Controller
            /* 'governorate:id,name',
             'city:id,name,governorate_id',*/
             'skills:id,name',
-        ])->findOrFail($id);
+        ])->where('status', 'active')->findOrFail($id);
 
         return response()->json([
             'project' => $project
@@ -72,6 +72,7 @@ class UserProjectController extends Controller
             'description' => $data['description'],
             'budget' => $data['budget'],
             'duration_days' => $data['duration_days'],
+            'status' => 'active',
         ]);
 
         $project->skills()->sync($data['skills']);

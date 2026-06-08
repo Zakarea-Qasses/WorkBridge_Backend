@@ -157,22 +157,6 @@ class ConversationController extends Controller
     }
 
     /**
-     * حذف محادثة من طرف المستخدم الحالي - اختياري
-     * ملاحظة: هذا يحذفها نهائياً من قاعدة البيانات، فقط استخدميه إذا هذا المطلوب.
-     */
-    public function destroy(Request $request, Conversation $conversation)
-    {
-        $this->checkUserInConversation($request, $conversation);
-
-        $conversation->messages()->delete();
-        $conversation->delete();
-
-        return response()->json([
-            'message' => 'تم حذف المحادثة بنجاح',
-        ], 200);
-    }
-
-    /**
      * التحقق أن المستخدم طرف في المحادثة
      */
     private function checkUserInConversation(Request $request, Conversation $conversation): void

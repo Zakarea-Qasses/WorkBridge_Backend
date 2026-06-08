@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\Api\AdminUserController;
+use App\Http\Controllers\Api\AdminCompanyVerificationController;
+use App\Http\Controllers\Api\AdminContentController;
+use App\Http\Controllers\Api\AdminSettingController;
 use App\Http\Controllers\Api\ApplicationController;
 use App\Http\Controllers\Api\CategoryController;
 use Illuminate\Http\Request;
@@ -9,6 +12,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\ConversationController;
+use App\Http\Controllers\Api\ContractController;
 use App\Http\Controllers\Api\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\DashboardController;
@@ -18,6 +22,9 @@ use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\ServiceRequestController;
 use App\Http\Controllers\Api\UserNotificationController;
 use App\Http\Controllers\Api\UserProjectController;
+use App\Http\Controllers\Api\UserSettingController;
+use App\Http\Controllers\Api\ReviewController;
+use App\Http\Controllers\Api\WalletController;
 use App\Http\Controllers\Api\JobPostController;
 
 Route::get('/user', function (Request $request) {
@@ -108,6 +115,29 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
 });
 
+// |----Wallet---|
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/wallet', [WalletController::class, 'myWallet']);
+    Route::post('/wallet/deposit', [WalletController::class, 'deposit']);
+    Route::post('/wallet/withdraw', [WalletController::class, 'withdraw']);
+    Route::post('/wallet/transfer-to-admin', [WalletController::class, 'transferToAdmin']);
+});
+
+// |----Contracts---|
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/contracts', [ContractController::class, 'index']);
+    Route::get('/contracts/{id}', [ContractController::class, 'show']);
+    Route::post('/contracts/{id}/start', [ContractController::class, 'start']);
+    Route::post('/contracts/{id}/complete', [ContractController::class, 'complete']);
+    Route::post('/contracts/{id}/cancel', [ContractController::class, 'cancel']);
+});
+
+// |----Reviews---|
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/reviews', [ReviewController::class, 'store']);
+});
+Route::get('/users/{userId}/reviews', [ReviewController::class, 'userReviews']);
+
 
 // |----Notifications---|
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
@@ -116,6 +146,15 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::post('/notifications/{id}/read', [UserNotificationController::class, 'markAsRead']);
     Route::post('/notifications/read-all', [UserNotificationController::class, 'markAllAsRead']);
     Route::delete('/notifications/{id}', [UserNotificationController::class, 'destroy']);
+});
+
+// |----User Settings---|
+Route::middleware(['auth:sanctum', 'verified'])->group(function () {
+    Route::get('/settings', [UserSettingController::class, 'show']);
+    Route::put('/settings/privacy', [UserSettingController::class, 'updatePrivacy']);
+    Route::put('/settings/notifications', [UserSettingController::class, 'updateNotifications']);
+    Route::put('/settings/password', [UserSettingController::class, 'updatePassword']);
+    Route::delete('/settings/local-data', [UserSettingController::class, 'clearLocalData']);
 });
 
 
@@ -183,6 +222,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/reports', [ReportController::class, 'store']);
+    Route::get('/reports/my', [ReportController::class, 'myReports']);
+    Route::get('/reports/latest', [ReportController::class, 'latestMine']);
 });
 
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
@@ -193,6 +234,10 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
 //Admin Users Management Routes
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/users', [AdminUserController::class, 'index']);
+    Route::get('/transactions', [WalletController::class, 'adminTransactions']);
+    Route::get('/earnings', [WalletController::class, 'adminEarnings']);
+    Route::get('/settings', [AdminSettingController::class, 'show']);
+    Route::put('/settings', [AdminSettingController::class, 'update']);
     Route::get('/users/review-board', [AdminUserController::class, 'reviewBoard']);
     Route::get('/users/{id}', [AdminUserController::class, 'show']);
 
@@ -201,6 +246,28 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::post('/users/{id}/block', [AdminUserController::class, 'block']);
 
     Route::delete('/users/{id}', [AdminUserController::class, 'destroy']);
+
+    Route::get('/companies', [AdminCompanyVerificationController::class, 'index']);
+    Route::get('/companies/pending', [AdminCompanyVerificationController::class, 'pending']);
+    Route::post('/companies/{id}/verify', [AdminCompanyVerificationController::class, 'verify']);
+    Route::post('/companies/{id}/unverify', [AdminCompanyVerificationController::class, 'unverify']);
+
+    Route::get('/content/projects', [AdminContentController::class, 'projects']);
+    Route::put('/content/projects/{id}/status', [AdminContentController::class, 'updateProjectStatus']);
+    Route::delete('/content/projects/{id}', [AdminContentController::class, 'destroyProject']);
+
+    Route::get('/content/services', [AdminContentController::class, 'services']);
+    Route::put('/content/services/{id}/status', [AdminContentController::class, 'updateServiceStatus']);
+    Route::delete('/content/services/{id}', [AdminContentController::class, 'destroyService']);
+
+    Route::get('/content/jobs', [AdminContentController::class, 'jobs']);
+    Route::put('/content/jobs/{id}/status', [AdminContentController::class, 'updateJobStatus']);
+    Route::delete('/content/jobs/{id}', [AdminContentController::class, 'destroyJob']);
+
+    Route::get('/content/categories', [AdminContentController::class, 'categories']);
+    Route::post('/content/categories', [AdminContentController::class, 'storeCategory']);
+    Route::put('/content/categories/{id}', [AdminContentController::class, 'updateCategory']);
+    Route::delete('/content/categories/{id}', [AdminContentController::class, 'destroyCategory']);
 });
 //jobpost
 // Job Posts Routes
@@ -208,6 +275,10 @@ Route::get('/jobs', [JobPostController::class, 'index']);
 Route::get('/jobs/{id}', [JobPostController::class, 'show']);
 
 Route::middleware(['auth:sanctum', 'role:company'])->group(function () {
+    Route::get('/company/services', [ServiceController::class, 'companyBrowse']);
+    Route::get('/company/contracts', [ContractController::class, 'companyContracts']);
+    Route::post('/company/jobs/{jobId}/contracts', [ContractController::class, 'createCompanyJobContract']);
+
     Route::get('/company/jobs', [JobPostController::class, 'myJobs']);
     Route::post('/jobs', [JobPostController::class, 'store']);
     Route::put('/jobs/{id}', [JobPostController::class, 'update']);

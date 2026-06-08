@@ -22,11 +22,7 @@ return new class extends Migration
             ->constrained('users')
             ->nullOnDelete();
 
-        $table->enum('type', [
-            'deposit',
-            'withdraw',
-            'transfer_to_admin'
-        ]);
+        $table->string('type');
 
         $table->decimal('amount', 15, 2);
 
@@ -40,12 +36,10 @@ return new class extends Migration
             $table->timestamps();
 
          $table->enum('direction', ['credit', 'debit'])
-                ->default('credit')
-                ->after('type');
+                ->default('credit');
 
             $table->enum('status', ['completed', 'failed', 'pending'])
-                ->default('completed')
-                ->after('balance_after');
+                ->default('completed');
       });
     }
 
