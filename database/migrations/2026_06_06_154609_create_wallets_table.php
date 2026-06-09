@@ -19,7 +19,7 @@ return new class extends Migration
             ->constrained('users')
             ->cascadeOnDelete();
 
-        $table->enum('type', ['user', 'admin',])
+        $table->string('type')
             ->default('user');
 
         $table->decimal('balance', 15, 2)

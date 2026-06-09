@@ -192,7 +192,6 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::get('/conversations/{conversation}/messages', [ConversationController::class, 'messages']);
     Route::post('/conversations/{conversation}/messages', [ConversationController::class, 'sendMessage']);
     Route::post('/conversations/{conversation}/read', [ConversationController::class, 'markAsRead']);
-    Route::delete('/conversations/{conversation}', [ConversationController::class, 'destroy']);
 });
 
 //Application Routes
@@ -234,7 +233,9 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
 //Admin Users Management Routes
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/users', [AdminUserController::class, 'index']);
+    Route::get('/wallets', [WalletController::class, 'allWallets']);
     Route::get('/transactions', [WalletController::class, 'adminTransactions']);
+    Route::get('/escrow/transactions', [WalletController::class, 'escrowTransactions']);
     Route::get('/earnings', [WalletController::class, 'adminEarnings']);
     Route::get('/settings', [AdminSettingController::class, 'show']);
     Route::put('/settings', [AdminSettingController::class, 'update']);

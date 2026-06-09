@@ -25,5 +25,10 @@ class AdminUserSeeder extends Seeder
             ['type'=>'admin'],
             ['balance'=>0, 'is_active'=>true]
         );
+
+        Wallet::updateOrCreate(
+            ['type'=>'escrow'],
+            ['balance'=>0, 'is_active'=>true]
+        );
     }
 }

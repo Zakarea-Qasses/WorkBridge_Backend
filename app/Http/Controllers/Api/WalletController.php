@@ -99,9 +99,33 @@ class WalletController extends Controller
             'status' => true,
             'balance' => $wallet->balance,
             'earnings' => $wallet->transactions()
-                ->whereIn('type', ['admin_receive', 'commission'])
+                ->whereIn('type', ['admin_receive', 'commission', 'platform_commission'])
                 ->where('direction', 'credit')
                 ->sum('amount'),
+        ]);
+    }
+
+    public function escrowTransactions()
+    {
+        $wallet = \App\Models\Wallet::where('type', 'escrow')
+            ->with('transactions')
+            ->firstOrFail();
+
+        return response()->json([
+            'status' => true,
+            'wallet' => $wallet,
+        ]);
+    }
+
+    public function allWallets()
+    {
+        $wallets = \App\Models\Wallet::with(['user:id,name,email', 'transactions'])
+            ->latest()
+            ->get();
+
+        return response()->json([
+            'status' => true,
+            'wallets' => $wallets,
         ]);
     }
 }

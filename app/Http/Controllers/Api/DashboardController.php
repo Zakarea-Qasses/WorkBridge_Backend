@@ -107,7 +107,7 @@ class DashboardController extends Controller
         }
 
         return (float) $adminWallet->transactions()
-            ->whereIn('type', ['admin_receive', 'commission'])
+            ->whereIn('type', ['admin_receive', 'commission', 'platform_commission'])
             ->where('direction', 'credit')
             ->sum('amount');
     }
@@ -265,7 +265,7 @@ class DashboardController extends Controller
 
         $rows = $adminWallet->transactions()
             ->selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, SUM(amount) as total')
-            ->whereIn('type', ['admin_receive', 'commission'])
+            ->whereIn('type', ['admin_receive', 'commission', 'platform_commission'])
             ->where('direction', 'credit')
             ->where('created_at', '>=', $from)
             ->groupBy(DB::raw('YEAR(created_at)'), DB::raw('MONTH(created_at)'))

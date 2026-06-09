@@ -14,19 +14,22 @@ use Illuminate\Validation\ValidationException;
 
 class ContractService
 {
-    private float $commissionRate = 0.10;
+    private float $commissionRate = 0.20;
 
     public function createFromApplication(Application $application): Contract
     {
+        $amount = (float) $application->price;
+        $split = $this->splitAmount($amount);
+
         return Contract::firstOrCreate(
             ['application_id' => $application->id],
             [
                 'client_id' => $application->project->user_id,
                 'freelancer_id' => $application->user_id,
                 'user_project_id' => $application->user_project_id,
-                'amount' => $application->price,
-                'commission_amount' => round($application->price * $this->commissionRate, 2),
-                'freelancer_amount' => round($application->price - ($application->price * $this->commissionRate), 2),
+                'amount' => $amount,
+                'commission_amount' => $split['commission'],
+                'freelancer_amount' => $split['freelancer'],
                 'status' => 'pending',
             ]
         );
@@ -34,14 +37,17 @@ class ContractService
 
     public function createFromServiceRequest(ServiceRequest $serviceRequest): Contract
     {
+        $amount = (float) $serviceRequest->service->price;
+        $split = $this->splitAmount($amount);
+
         return Contract::firstOrCreate(
             ['service_request_id' => $serviceRequest->id],
             [
                 'client_id' => $serviceRequest->client_id,
                 'freelancer_id' => $serviceRequest->service->user_id,
-                'amount' => $serviceRequest->service->price,
-                'commission_amount' => round($serviceRequest->service->price * $this->commissionRate, 2),
-                'freelancer_amount' => round($serviceRequest->service->price - ($serviceRequest->service->price * $this->commissionRate), 2),
+                'amount' => $amount,
+                'commission_amount' => $split['commission'],
+                'freelancer_amount' => $split['freelancer'],
                 'status' => 'pending',
             ]
         );
@@ -49,15 +55,15 @@ class ContractService
 
     public function createFromJobPost(JobPost $jobPost, User $freelancer, float $amount): Contract
     {
-        $commission = round($amount * $this->commissionRate, 2);
+        $split = $this->splitAmount($amount);
 
         return Contract::create([
             'client_id' => $jobPost->company->user_id,
             'freelancer_id' => $freelancer->id,
             'job_post_id' => $jobPost->id,
             'amount' => $amount,
-            'commission_amount' => $commission,
-            'freelancer_amount' => round($amount - $commission, 2),
+            'commission_amount' => $split['commission'],
+            'freelancer_amount' => $split['freelancer'],
             'status' => 'pending',
         ]);
     }
@@ -72,6 +78,7 @@ class ContractService
 
         return DB::transaction(function () use ($contract) {
             $clientWallet = $this->userWallet($contract->client_id);
+            $escrowWallet = $this->systemWallet('escrow');
 
             if ($clientWallet->balance < $contract->amount) {
                 throw ValidationException::withMessages([
@@ -79,12 +86,21 @@ class ContractService
                 ]);
             }
 
-            $before = $clientWallet->balance;
-            $after = $before - $contract->amount;
+            $this->moveOut(
+                $clientWallet,
+                $contract->client_id,
+                'contract_fund',
+                (float) $contract->amount,
+                'Contract amount moved to escrow wallet'
+            );
 
-            $clientWallet->update(['balance' => $after]);
-
-            $this->transaction($clientWallet, $contract->client_id, 'escrow_hold', 'debit', $contract->amount, $before, $after, 'Contract amount reserved');
+            $this->moveIn(
+                $escrowWallet,
+                $contract->client_id,
+                'escrow_receive',
+                (float) $contract->amount,
+                'Escrow wallet received contract amount'
+            );
 
             $contract->update([
                 'status' => 'funded',
@@ -117,33 +133,6 @@ class ContractService
         return $this->releasePayment($contract);
     }
 
-    private function releasePayment(Contract $contract): Contract
-    {
-        return DB::transaction(function () use ($contract) {
-            $freelancerWallet = $this->userWallet($contract->freelancer_id);
-            $adminWallet = $this->adminWallet();
-
-            $freelancerBefore = $freelancerWallet->balance;
-            $freelancerAfter = $freelancerBefore + $contract->freelancer_amount;
-            $freelancerWallet->update(['balance' => $freelancerAfter]);
-
-            $this->transaction($freelancerWallet, $contract->freelancer_id, 'contract_payment', 'credit', $contract->freelancer_amount, $freelancerBefore, $freelancerAfter, 'Contract payment released');
-
-            $adminBefore = $adminWallet->balance;
-            $adminAfter = $adminBefore + $contract->commission_amount;
-            $adminWallet->update(['balance' => $adminAfter]);
-
-            $this->transaction($adminWallet, $contract->client_id, 'commission', 'credit', $contract->commission_amount, $adminBefore, $adminAfter, 'Contract commission');
-
-            $contract->update([
-                'status' => 'completed',
-                'completed_at' => now(),
-            ]);
-
-            return $contract->fresh();
-        });
-    }
-
     public function cancel(Contract $contract): Contract
     {
         if ($contract->status === 'completed') {
@@ -169,13 +158,30 @@ class ContractService
         }
 
         return DB::transaction(function () use ($contract, $status) {
+            $escrowWallet = $this->systemWallet('escrow');
             $clientWallet = $this->userWallet($contract->client_id);
-            $before = $clientWallet->balance;
-            $after = $before + $contract->amount;
 
-            $clientWallet->update(['balance' => $after]);
+            if ($escrowWallet->balance < $contract->amount) {
+                throw ValidationException::withMessages([
+                    'escrow' => 'Escrow wallet balance is not enough to refund this contract.',
+                ]);
+            }
 
-            $this->transaction($clientWallet, $contract->client_id, 'refund', 'credit', $contract->amount, $before, $after, 'Contract amount refunded');
+            $this->moveOut(
+                $escrowWallet,
+                $contract->client_id,
+                'escrow_refund',
+                (float) $contract->amount,
+                'Escrow wallet refunded contract amount'
+            );
+
+            $this->moveIn(
+                $clientWallet,
+                $contract->client_id,
+                'refund',
+                (float) $contract->amount,
+                'Contract amount refunded to client'
+            );
 
             $contract->update(['status' => $status]);
 
@@ -196,6 +202,52 @@ class ContractService
         return $contract->fresh();
     }
 
+    private function releasePayment(Contract $contract): Contract
+    {
+        return DB::transaction(function () use ($contract) {
+            $escrowWallet = $this->systemWallet('escrow');
+            $freelancerWallet = $this->userWallet($contract->freelancer_id);
+            $adminWallet = $this->systemWallet('admin');
+
+            if ($escrowWallet->balance < $contract->amount) {
+                throw ValidationException::withMessages([
+                    'escrow' => 'Escrow wallet balance is not enough to release this contract.',
+                ]);
+            }
+
+            $this->moveOut(
+                $escrowWallet,
+                $contract->client_id,
+                'escrow_release',
+                (float) $contract->amount,
+                'Escrow wallet released contract amount'
+            );
+
+            $this->moveIn(
+                $freelancerWallet,
+                $contract->freelancer_id,
+                'contract_payment',
+                (float) $contract->freelancer_amount,
+                'Contract payment released to freelancer'
+            );
+
+            $this->moveIn(
+                $adminWallet,
+                $contract->client_id,
+                'platform_commission',
+                (float) $contract->commission_amount,
+                'Platform commission received by admin wallet'
+            );
+
+            $contract->update([
+                'status' => 'completed',
+                'completed_at' => now(),
+            ]);
+
+            return $contract->fresh();
+        });
+    }
+
     private function userWallet(int $userId): Wallet
     {
         return Wallet::where('user_id', $userId)
@@ -205,12 +257,37 @@ class ContractService
             ->firstOrFail();
     }
 
-    private function adminWallet(): Wallet
+    private function systemWallet(string $type): Wallet
     {
-        return Wallet::firstOrCreate(
-            ['type' => 'admin'],
+        Wallet::firstOrCreate(
+            ['type' => $type],
             ['balance' => 0, 'is_active' => true]
         );
+
+        return Wallet::where('type', $type)
+            ->where('is_active', true)
+            ->lockForUpdate()
+            ->firstOrFail();
+    }
+
+    private function moveIn(Wallet $wallet, ?int $userId, string $type, float $amount, string $description): WalletTransaction
+    {
+        $before = (float) $wallet->balance;
+        $after = $before + $amount;
+
+        $wallet->update(['balance' => $after]);
+
+        return $this->transaction($wallet, $userId, $type, 'credit', $amount, $before, $after, $description);
+    }
+
+    private function moveOut(Wallet $wallet, ?int $userId, string $type, float $amount, string $description): WalletTransaction
+    {
+        $before = (float) $wallet->balance;
+        $after = $before - $amount;
+
+        $wallet->update(['balance' => $after]);
+
+        return $this->transaction($wallet, $userId, $type, 'debit', $amount, $before, $after, $description);
     }
 
     private function transaction(Wallet $wallet, ?int $userId, string $type, string $direction, float $amount, float $before, float $after, string $description): WalletTransaction
@@ -226,5 +303,15 @@ class ContractService
             'status' => 'completed',
             'description' => $description,
         ]);
+    }
+
+    private function splitAmount(float $amount): array
+    {
+        $commission = round($amount * $this->commissionRate, 2);
+
+        return [
+            'commission' => $commission,
+            'freelancer' => round($amount - $commission, 2),
+        ];
     }
 }

@@ -15,7 +15,7 @@ class EnsureEmailIsVerified
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if($request->user() && !$request->user()->VerifiedEmail()){
+        if($request->user() && !$request->user()->hasVerifiedEmail()){
             return response()->json([
                 'message'=>'يرجى تأكيد بريدك الالكتروني اولا'
             ],403);
