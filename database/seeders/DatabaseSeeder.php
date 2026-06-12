@@ -20,29 +20,5 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             LocationSeeder::class,
         ]);
-        // User::factory(10)->create();
-
-        $testUser = User::updateOrCreate(
-            ['email' => 'test@example.com'],
-            [
-                'name' => 'Test User',
-                'password' => 'password',
-                'role' => 'personal',
-                'status' => 'active',
-                'email_verified_at' => now(),
-            ]
-        );
-
-        $testUser->profile()->firstOrCreate([
-            'user_id' => $testUser->id,
-        ]);
-
-        $testUser->wallet()->firstOrCreate([
-            'user_id' => $testUser->id,
-        ], [
-            'type' => 'user',
-            'balance' => 0,
-            'is_active' => true,
-        ]);
     }
 }

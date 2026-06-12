@@ -16,7 +16,7 @@ class AdminCompanyVerificationController extends Controller
             'is_verified' => ['nullable', 'boolean'],
         ]);
 
-        $companies = Company::with(['user:id,name,email,status', 'skills'])
+        $companies = Company::with(['user:id,name,email,status', 'skills', 'governorate', 'city'])
             ->when($data['search'] ?? null, function ($query, $search) {
                 $query->where('company_name', 'like', "%{$search}%")
                     ->orWhereHas('user', function ($q) use ($search) {
@@ -35,9 +35,9 @@ class AdminCompanyVerificationController extends Controller
 
     public function pending()
     {
-        $companies = Company::with(['user:id,name,email,status', 'skills'])
+        $companies = Company::with(['user:id,name,email,status', 'skills', 'governorate', 'city'])
             ->where('is_verified', false)
-            ->whereHas('user', fn ($query) => $query->whereIn('status', ['pending_review', 'under_review']))
+            ->whereHas('user', fn ($query) => $query->whereIn('status', ['unactive', 'pending_review', 'under_review']))
             ->latest()
             ->get();
 
@@ -58,14 +58,14 @@ class AdminCompanyVerificationController extends Controller
             UserNotification::create([
                 'user_id' => $company->user->id,
                 'type' => 'company_verified',
-                'title' => 'Company verified',
-                'message' => 'Your company account has been verified by admin.',
+                'title' => 'تم توثيق الشركة',
+                'message' => 'تم توثيق حساب شركتك من قبل الإدارة.',
             ]);
         }
 
         return response()->json([
-            'message' => 'Company verified successfully.',
-            'company' => $company->fresh()->load(['user:id,name,email,status', 'skills']),
+            'message' => 'تم توثيق الشركة بنجاح.',
+            'company' => $company->fresh()->load(['user:id,name,email,status', 'skills', 'governorate', 'city']),
         ]);
     }
 
@@ -76,20 +76,20 @@ class AdminCompanyVerificationController extends Controller
         $company->update(['is_verified' => false]);
 
         if ($company->user) {
-            $company->user->update(['status' => 'under_review']);
+            $company->user->update(['status' => 'unactive']);
             $company->user->tokens()->delete();
 
             UserNotification::create([
                 'user_id' => $company->user->id,
                 'type' => 'company_unverified',
-                'title' => 'Company verification removed',
-                'message' => 'Your company account has been moved back under review by admin.',
+                'title' => 'تم إلغاء توثيق الشركة',
+                'message' => 'تم إلغاء توثيق حساب شركتك من قبل الإدارة.',
             ]);
         }
 
         return response()->json([
-            'message' => 'Company verification removed successfully.',
-            'company' => $company->fresh()->load(['user:id,name,email,status', 'skills']),
+            'message' => 'تم إلغاء توثيق الشركة بنجاح.',
+            'company' => $company->fresh()->load(['user:id,name,email,status', 'skills', 'governorate', 'city']),
         ]);
     }
 }

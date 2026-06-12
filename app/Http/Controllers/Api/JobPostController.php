@@ -8,10 +8,14 @@ use Illuminate\Http\Request;
 
 class JobPostController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $jobs = JobPost::with(['company:id,company_name,logo', 'city'])
+        $jobs = JobPost::with(['company:id,company_name,logo', 'city.governorate'])
             ->where('status', 'active')
+            ->when($request->city_id, fn ($query, $cityId) => $query->where('city_id', $cityId))
+            ->when($request->governorate_id, function ($query, $governorateId) {
+                $query->whereHas('city', fn ($cityQuery) => $cityQuery->where('governorate_id', $governorateId));
+            })
             ->latest()
             ->get();
 
@@ -22,7 +26,7 @@ class JobPostController extends Controller
 
     public function show($id)
     {
-        $job = JobPost::with(['company:id,company_name,logo,description', 'city'])
+        $job = JobPost::with(['company:id,company_name,logo,description', 'city.governorate'])
             ->findOrFail($id);
 
         return response()->json([
@@ -36,11 +40,11 @@ class JobPostController extends Controller
 
         if (!$company) {
             return response()->json([
-                'message' => 'Company profile not found'
+                'message' => 'لم يتم العثور على ملف الشركة'
             ], 404);
         }
 
-        $jobs = JobPost::with('city')
+        $jobs = JobPost::with('city.governorate')
             ->where('company_id', $company->id)
             ->latest()
             ->get();
@@ -56,7 +60,7 @@ class JobPostController extends Controller
 
         if ($user->role !== 'company') {
             return response()->json([
-                'message' => 'Only company users can create job posts'
+                'message' => 'فقط حسابات الشركات يمكنها إنشاء وظائف'
             ], 403);
         }
 
@@ -64,7 +68,7 @@ class JobPostController extends Controller
 
         if (!$company) {
             return response()->json([
-                'message' => 'Company profile not found'
+                'message' => 'لم يتم العثور على ملف الشركة'
             ], 404);
         }
 
@@ -87,7 +91,7 @@ class JobPostController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Job post created successfully',
+            'message' => 'تم إنشاء الوظيفة بنجاح',
             'job' => $job->load(['company', 'city'])
         ], 201);
     }
@@ -99,7 +103,7 @@ class JobPostController extends Controller
 
         if (!$company || $job->company_id !== $company->id) {
             return response()->json([
-                'message' => 'You cannot update a job post you do not own'
+                'message' => 'لا يمكنك تعديل وظيفة لا تملكها'
             ], 403);
         }
 
@@ -115,7 +119,7 @@ class JobPostController extends Controller
         $job->update($data);
 
         return response()->json([
-            'message' => 'Job post updated successfully',
+            'message' => 'تم تحديث الوظيفة بنجاح',
             'job' => $job->load(['company', 'city'])
         ]);
     }
@@ -127,7 +131,7 @@ class JobPostController extends Controller
 
         if (!$company || $job->company_id !== $company->id) {
             return response()->json([
-                'message' => 'You cannot pause a job post you do not own'
+                'message' => 'لا يمكنك إيقاف وظيفة لا تملكها'
             ], 403);
         }
 
@@ -136,7 +140,7 @@ class JobPostController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Job post paused successfully',
+            'message' => 'تم إيقاف الوظيفة بنجاح',
             'job' => $job
         ]);
     }
@@ -148,7 +152,7 @@ class JobPostController extends Controller
 
         if (!$company || $job->company_id !== $company->id) {
             return response()->json([
-                'message' => 'You cannot activate a job post you do not own'
+                'message' => 'لا يمكنك تفعيل وظيفة لا تملكها'
             ], 403);
         }
 
@@ -157,7 +161,7 @@ class JobPostController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Job post activated successfully',
+            'message' => 'تم تفعيل الوظيفة بنجاح',
             'job' => $job
         ]);
     }
@@ -169,14 +173,14 @@ class JobPostController extends Controller
 
         if (!$company || $job->company_id !== $company->id) {
             return response()->json([
-                'message' => 'You cannot delete a job post you do not own'
+                'message' => 'لا يمكنك حذف وظيفة لا تملكها'
             ], 403);
         }
 
         $job->delete();
 
         return response()->json([
-            'message' => 'Job post deleted successfully'
+            'message' => 'تم حذف الوظيفة بنجاح'
         ]);
     }
 }

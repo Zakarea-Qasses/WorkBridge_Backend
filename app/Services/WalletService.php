@@ -13,7 +13,7 @@ class WalletService
     {
         if ($amount <= 0) {
             throw ValidationException::withMessages([
-                'amount' => 'Amount must be greater than zero.',
+                'amount' => 'يجب أن يكون المبلغ أكبر من صفر.',
             ]);
         }
 
@@ -40,7 +40,7 @@ class WalletService
                 'balance_before' => $balanceBefore,
                 'balance_after' => $balanceAfter,
                 'status' => 'completed',
-                'description' => 'Deposit amount',
+                'description' => 'إيداع مبلغ في المحفظة',
             ]);
         });
     }
@@ -49,7 +49,7 @@ class WalletService
     {
         if ($amount <= 0) {
             throw ValidationException::withMessages([
-                'amount' => 'Amount must be greater than zero.',
+                'amount' => 'يجب أن يكون المبلغ أكبر من صفر.',
             ]);
         }
 
@@ -62,7 +62,7 @@ class WalletService
 
             if ($wallet->balance < $amount) {
                 throw ValidationException::withMessages([
-                    'amount' => 'Insufficient wallet balance.',
+                    'amount' => 'رصيد المحفظة غير كاف.',
                 ]);
             }
 
@@ -82,7 +82,7 @@ class WalletService
                 'balance_before' => $balanceBefore,
                 'balance_after' => $balanceAfter,
                 'status' => 'completed',
-                'description' => 'Withdraw amount',
+                'description' => 'سحب مبلغ من المحفظة',
             ]);
         });
     }
@@ -91,7 +91,7 @@ class WalletService
     {
         if ($amount <= 0) {
             throw ValidationException::withMessages([
-                'amount' => 'Amount must be greater than zero.',
+                'amount' => 'يجب أن يكون المبلغ أكبر من صفر.',
             ]);
         }
 
@@ -109,7 +109,7 @@ class WalletService
 
             if ($userWallet->balance < $amount) {
                 throw ValidationException::withMessages([
-                    'amount' => 'Insufficient wallet balance.',
+                    'amount' => 'رصيد المحفظة غير كاف.',
                 ]);
             }
 
@@ -136,7 +136,7 @@ class WalletService
                 'balance_before' => $userBalanceBefore,
                 'balance_after' => $userBalanceAfter,
                 'status' => 'completed',
-                'description' => 'Transfer amount to admin wallet',
+                'description' => 'تحويل مبلغ إلى محفظة الأدمن',
             ]);
 
             WalletTransaction::create([
@@ -148,7 +148,7 @@ class WalletService
                 'balance_before' => $adminBalanceBefore,
                 'balance_after' => $adminBalanceAfter,
                 'status' => 'completed',
-                'description' => 'Admin wallet received amount',
+                'description' => 'استلام مبلغ في محفظة الأدمن',
             ]);
 
             return $userTransaction;

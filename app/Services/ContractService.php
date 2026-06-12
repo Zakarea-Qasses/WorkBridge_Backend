@@ -72,7 +72,7 @@ class ContractService
     {
         if ($contract->status !== 'pending') {
             throw ValidationException::withMessages([
-                'contract' => 'Contract cannot be funded in its current status.',
+                'contract' => 'لا يمكن تمويل العقد في حالته الحالية.',
             ]);
         }
 
@@ -82,7 +82,7 @@ class ContractService
 
             if ($clientWallet->balance < $contract->amount) {
                 throw ValidationException::withMessages([
-                    'amount' => 'Insufficient wallet balance.',
+                    'amount' => 'رصيد المحفظة غير كاف.',
                 ]);
             }
 
@@ -91,7 +91,7 @@ class ContractService
                 $contract->client_id,
                 'contract_fund',
                 (float) $contract->amount,
-                'Contract amount moved to escrow wallet'
+                'تم تحويل مبلغ العقد إلى محفظة الوسيط'
             );
 
             $this->moveIn(
@@ -99,7 +99,7 @@ class ContractService
                 $contract->client_id,
                 'escrow_receive',
                 (float) $contract->amount,
-                'Escrow wallet received contract amount'
+                'استلمت محفظة الوسيط مبلغ العقد'
             );
 
             $contract->update([
@@ -115,7 +115,7 @@ class ContractService
     {
         if (! in_array($contract->status, ['funded', 'in_progress'], true)) {
             throw ValidationException::withMessages([
-                'contract' => 'Contract cannot be completed in its current status.',
+                'contract' => 'لا يمكن إكمال العقد في حالته الحالية.',
             ]);
         }
 
@@ -126,7 +126,7 @@ class ContractService
     {
         if ($contract->status !== 'dispute') {
             throw ValidationException::withMessages([
-                'contract' => 'Only disputed contracts can be released by admin.',
+                'contract' => 'يمكن للأدمن تحرير المبلغ فقط للعقود المتنازع عليها.',
             ]);
         }
 
@@ -137,7 +137,7 @@ class ContractService
     {
         if ($contract->status === 'completed') {
             throw ValidationException::withMessages([
-                'contract' => 'Completed contract cannot be canceled.',
+                'contract' => 'لا يمكن إلغاء عقد مكتمل.',
             ]);
         }
 
@@ -153,7 +153,7 @@ class ContractService
     {
         if (! in_array($contract->status, ['funded', 'in_progress', 'dispute'], true)) {
             throw ValidationException::withMessages([
-                'contract' => 'Contract cannot be refunded in its current status.',
+                'contract' => 'لا يمكن رد مبلغ العقد في حالته الحالية.',
             ]);
         }
 
@@ -163,7 +163,7 @@ class ContractService
 
             if ($escrowWallet->balance < $contract->amount) {
                 throw ValidationException::withMessages([
-                    'escrow' => 'Escrow wallet balance is not enough to refund this contract.',
+                    'escrow' => 'رصيد محفظة الوسيط غير كاف لرد مبلغ هذا العقد.',
                 ]);
             }
 
@@ -172,7 +172,7 @@ class ContractService
                 $contract->client_id,
                 'escrow_refund',
                 (float) $contract->amount,
-                'Escrow wallet refunded contract amount'
+                'ردت محفظة الوسيط مبلغ العقد'
             );
 
             $this->moveIn(
@@ -180,7 +180,7 @@ class ContractService
                 $contract->client_id,
                 'refund',
                 (float) $contract->amount,
-                'Contract amount refunded to client'
+                'تم رد مبلغ العقد إلى العميل'
             );
 
             $contract->update(['status' => $status]);
@@ -193,7 +193,7 @@ class ContractService
     {
         if (! in_array($contract->status, ['funded', 'in_progress'], true)) {
             throw ValidationException::withMessages([
-                'contract' => 'Only funded contracts can enter dispute.',
+                'contract' => 'يمكن فتح نزاع فقط على العقود الممولة.',
             ]);
         }
 
@@ -211,7 +211,7 @@ class ContractService
 
             if ($escrowWallet->balance < $contract->amount) {
                 throw ValidationException::withMessages([
-                    'escrow' => 'Escrow wallet balance is not enough to release this contract.',
+                    'escrow' => 'رصيد محفظة الوسيط غير كاف لتحرير مبلغ هذا العقد.',
                 ]);
             }
 
@@ -220,7 +220,7 @@ class ContractService
                 $contract->client_id,
                 'escrow_release',
                 (float) $contract->amount,
-                'Escrow wallet released contract amount'
+                'حررت محفظة الوسيط مبلغ العقد'
             );
 
             $this->moveIn(
@@ -228,7 +228,7 @@ class ContractService
                 $contract->freelancer_id,
                 'contract_payment',
                 (float) $contract->freelancer_amount,
-                'Contract payment released to freelancer'
+                'تم تحرير دفعة العقد للمستفيد'
             );
 
             $this->moveIn(
@@ -236,7 +236,7 @@ class ContractService
                 $contract->client_id,
                 'platform_commission',
                 (float) $contract->commission_amount,
-                'Platform commission received by admin wallet'
+                'استلمت محفظة الأدمن عمولة المنصة'
             );
 
             $contract->update([

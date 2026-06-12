@@ -23,12 +23,12 @@ class DashboardController extends Controller
 
         if ($user->role !== 'personal') {
             return response()->json([
-                'message' => 'Unauthorized',
+                'message' => 'غير مصرح لك بالدخول',
             ], 403);
         }
 
         return response()->json([
-            'message' => 'Welcome to personal dashboard',
+            'message' => 'مرحباً بك في لوحة المستخدم الشخصي',
             'role' => $user->role,
             'user' => $user,
             'stats' => [
@@ -57,12 +57,12 @@ class DashboardController extends Controller
 
         if ($user->role !== 'company') {
             return response()->json([
-                'message' => 'Unauthorized',
+                'message' => 'غير مصرح لك بالدخول',
             ], 403);
         }
 
         return response()->json([
-            'message' => 'Welcome to company dashboard',
+            'message' => 'مرحباً بك في لوحة الشركة',
             'role' => $user->role,
             'user' => $user,
         ], 200);
@@ -74,12 +74,12 @@ class DashboardController extends Controller
 
         if ($user->role !== 'admin') {
             return response()->json([
-                'message' => 'Unauthorized',
+                'message' => 'غير مصرح لك بالدخول',
             ], 403);
         }
 
         return response()->json([
-            'message' => 'Welcome to admin dashboard',
+            'message' => 'مرحباً بك في لوحة تحكم الأدمن',
             'role' => $user->role,
             'user' => $user,
             'stats' => [

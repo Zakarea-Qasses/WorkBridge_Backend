@@ -28,7 +28,7 @@ class UserSettingController extends Controller
         $settings->update($data);
 
         return response()->json([
-            'message' => 'Privacy settings updated successfully.',
+            'message' => 'تم تحديث إعدادات الخصوصية بنجاح.',
             'settings' => $this->settings($request),
         ]);
     }
@@ -43,7 +43,7 @@ class UserSettingController extends Controller
         $settings->update($data);
 
         return response()->json([
-            'message' => 'Notification settings updated successfully.',
+            'message' => 'تم تحديث إعدادات الإشعارات بنجاح.',
             'settings' => $this->settings($request),
         ]);
     }
@@ -59,7 +59,7 @@ class UserSettingController extends Controller
 
         if (! Hash::check($data['current_password'], $user->password)) {
             return response()->json([
-                'message' => 'Current password is incorrect.',
+                'message' => 'كلمة المرور الحالية غير صحيحة.',
             ], 422);
         }
 
@@ -72,7 +72,7 @@ class UserSettingController extends Controller
             ->delete();
 
         return response()->json([
-            'message' => 'Password updated successfully.',
+            'message' => 'تم تحديث كلمة المرور بنجاح.',
         ]);
     }
 
@@ -81,7 +81,7 @@ class UserSettingController extends Controller
         $deletedNotifications = UserNotification::where('user_id', $request->user()->id)->delete();
 
         return response()->json([
-            'message' => 'User local data cleared successfully.',
+            'message' => 'تم حذف بيانات المستخدم المحلية بنجاح.',
             'deleted_notifications' => $deletedNotifications,
         ]);
     }

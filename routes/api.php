@@ -160,6 +160,8 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
 // |----Location---|
 Route::get('/governorates',[LocationController::class,'governorates']);
+Route::get('/cities',[LocationController::class,'allCities']);
+Route::get('/cities/{id}',[LocationController::class,'city']);
 Route::get('/governorates/{id}/cities',[LocationController::class,'cities']);
 
 Route::get('/categories', [CategoryController::class, 'index']);

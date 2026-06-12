@@ -21,7 +21,7 @@ class ApplicationController extends Controller
 
         if ($user->role !== 'personal') {
             return response()->json([
-                'message' => 'فقط المستخدم الشخصي يمكنه التقديم على المشاريع'
+                'message' => 'فقط المستخدم الشخصي يمكنه التقديم على المشاريع.',
             ], 403);
         }
 
@@ -29,7 +29,7 @@ class ApplicationController extends Controller
 
         if ($project->user_id === $user->id) {
             return response()->json([
-                'message' => 'لا يمكنك التقديم على مشروعك'
+                'message' => 'لا يمكنك التقديم على مشروعك.',
             ], 403);
         }
 
@@ -45,7 +45,7 @@ class ApplicationController extends Controller
 
         if ($exists) {
             return response()->json([
-                'message' => 'لقد قدمت على هذا المشروع مسبقاً'
+                'message' => 'لقد قدمت على هذا المشروع مسبقا.',
             ], 409);
         }
 
@@ -62,12 +62,12 @@ class ApplicationController extends Controller
             'user_id' => $project->user_id,
             'type' => 'project_application',
             'title' => 'وصل عرض جديد على مشروعك',
-            'message' => $user->name . ' قدم عرضاً على مشروع: ' . $project->title,
+            'message' => $user->name . ' قدم عرضا على مشروع: ' . $project->title,
         ]);
 
         return response()->json([
-            'message' => 'تم إرسال العرض بنجاح',
-            'application' => $application
+            'message' => 'تم إرسال العرض بنجاح.',
+            'application' => $application,
         ], 201);
     }
 
@@ -77,7 +77,7 @@ class ApplicationController extends Controller
 
         $applications = Application::with([
             'user:id,name,email',
-            'project:id,user_id,title'
+            'project:id,user_id,title',
         ])
             ->whereHas('project', function ($query) use ($user) {
                 $query->where('user_id', $user->id);
@@ -86,21 +86,21 @@ class ApplicationController extends Controller
             ->get();
 
         return response()->json([
-            'applications' => $applications
+            'applications' => $applications,
         ]);
     }
 
     public function myApplications(Request $request)
     {
         $applications = Application::with([
-            'project:id,title,user_id'
+            'project:id,title,user_id',
         ])
             ->where('user_id', $request->user()->id)
             ->latest()
             ->get();
 
         return response()->json([
-            'applications' => $applications
+            'applications' => $applications,
         ]);
     }
 
@@ -110,12 +110,12 @@ class ApplicationController extends Controller
 
         if ($application->project->user_id !== $request->user()->id) {
             return response()->json([
-                'message' => 'لا يمكنك قبول عرض على مشروع لا تملكه'
+                'message' => 'لا يمكنك قبول عرض على مشروع لا تملكه.',
             ], 403);
         }
 
         $application->update([
-            'status' => 'accepted'
+            'status' => 'accepted',
         ]);
 
         Application::where('user_project_id', $application->user_project_id)
@@ -132,23 +132,24 @@ class ApplicationController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'تم قبول العرض بنجاح',
+            'message' => 'تم قبول العرض بنجاح.',
             'application' => $application,
-            'contract' => $contract
+            'contract' => $contract,
         ]);
     }
 
     public function reject(Request $request, $id)
     {
         $application = Application::with('project')->findOrFail($id);
+
         if ($application->project->user_id !== $request->user()->id) {
             return response()->json([
-                'message' => 'لا يمكنك رفض عرض على مشروع لا تملكه'
+                'message' => 'لا يمكنك رفض عرض على مشروع لا تملكه.',
             ], 403);
         }
 
         $application->update([
-            'status' => 'rejected'
+            'status' => 'rejected',
         ]);
 
         UserNotification::create([
@@ -159,8 +160,8 @@ class ApplicationController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'تم رفض العرض',
-            'application' => $application
+            'message' => 'تم رفض العرض.',
+            'application' => $application,
         ]);
     }
 }

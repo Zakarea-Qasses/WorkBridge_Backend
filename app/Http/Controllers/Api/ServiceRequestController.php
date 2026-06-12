@@ -21,7 +21,7 @@ class ServiceRequestController extends Controller
 
         if (! in_array($user->role, ['personal', 'company'], true)) {
             return response()->json([
-                'message' => 'فقط المستخدم الشخصي يمكنه طلب خدمة'
+                'message' => 'فقط المستخدم الشخصي أو الشركة يمكنه طلب خدمة.',
             ], 403);
         }
 
@@ -29,7 +29,7 @@ class ServiceRequestController extends Controller
 
         if ($service->user_id === $user->id) {
             return response()->json([
-                'message' => 'لا يمكنك طلب خدمتك أنت'
+                'message' => 'لا يمكنك طلب خدمتك أنت.',
             ], 403);
         }
 
@@ -58,8 +58,8 @@ class ServiceRequestController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'تم إرسال طلب الخدمة بنجاح',
-            'service_request' => $serviceRequest
+            'message' => 'تم إرسال طلب الخدمة بنجاح.',
+            'service_request' => $serviceRequest,
         ], 201);
     }
 
@@ -67,7 +67,7 @@ class ServiceRequestController extends Controller
     {
         $requests = ServiceRequest::with([
             'client:id,name,email',
-            'service:id,user_id,title,price,delivery_days'
+            'service:id,user_id,title,price,delivery_days',
         ])
             ->whereHas('service', function ($query) use ($request) {
                 $query->where('user_id', $request->user()->id);
@@ -76,7 +76,7 @@ class ServiceRequestController extends Controller
             ->get();
 
         return response()->json([
-            'requests' => $requests
+            'requests' => $requests,
         ]);
     }
 
@@ -84,14 +84,14 @@ class ServiceRequestController extends Controller
     {
         $requests = ServiceRequest::with([
             'service:id,user_id,title,price,delivery_days',
-            'service.user:id,name,email'
+            'service.user:id,name,email',
         ])
             ->where('client_id', $request->user()->id)
             ->latest()
             ->get();
 
         return response()->json([
-            'requests' => $requests
+            'requests' => $requests,
         ]);
     }
 
@@ -101,12 +101,12 @@ class ServiceRequestController extends Controller
 
         if ($serviceRequest->service->user_id !== $request->user()->id) {
             return response()->json([
-                'message' => 'لا يمكنك قبول طلب على خدمة لا تملكها'
+                'message' => 'لا يمكنك قبول طلب على خدمة لا تملكها.',
             ], 403);
         }
 
         $serviceRequest->update([
-            'status' => 'accepted'
+            'status' => 'accepted',
         ]);
 
         $contract = $this->contractService->createFromServiceRequest($serviceRequest);
@@ -119,9 +119,9 @@ class ServiceRequestController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'تم قبول الطلب',
+            'message' => 'تم قبول الطلب.',
             'service_request' => $serviceRequest,
-            'contract' => $contract
+            'contract' => $contract,
         ]);
     }
 
@@ -131,14 +131,14 @@ class ServiceRequestController extends Controller
 
         if ($serviceRequest->service->user_id !== $request->user()->id) {
             return response()->json([
-                'message' => 'لا يمكنك رفض طلب على خدمة لا تملكها'
+                'message' => 'لا يمكنك رفض طلب على خدمة لا تملكها.',
             ], 403);
         }
 
         $serviceRequest->update([
-            'status' => 'rejected'
+            'status' => 'rejected',
         ]);
-        
+
         UserNotification::create([
             'user_id' => $serviceRequest->client_id,
             'type' => 'service_request_rejected',
@@ -147,8 +147,8 @@ class ServiceRequestController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'تم رفض الطلب',
-            'service_request' => $serviceRequest
+            'message' => 'تم رفض الطلب.',
+            'service_request' => $serviceRequest,
         ]);
     }
 }

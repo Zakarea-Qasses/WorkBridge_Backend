@@ -35,7 +35,7 @@ class AdminSettingController extends Controller
         }
 
         return response()->json([
-            'message' => 'Settings saved successfully.',
+            'message' => 'تم حفظ الإعدادات بنجاح.',
             'settings' => $this->settings(),
         ]);
     }

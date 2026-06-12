@@ -28,7 +28,7 @@ class UserProject extends Model
         return $this->belongsTo(Category::class);
     }
 
-  /*  public function governorate()
+    public function governorate()
     {
         return $this->belongsTo(Governorate::class);
     }
@@ -37,7 +37,7 @@ class UserProject extends Model
     {
         return $this->belongsTo(City::class);
     }
-*/
+
     public function skills()
     {
         return $this->belongsToMany(Skill::class,'project_skill');

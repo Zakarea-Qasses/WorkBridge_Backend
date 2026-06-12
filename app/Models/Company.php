@@ -9,6 +9,8 @@ class Company extends Model
 {
     protected $fillable = [
         'user_id',
+        'governorate_id',
+        'city_id',
         'company_name',
         'logo',
         'website',
@@ -31,5 +33,15 @@ class Company extends Model
     public function jobPosts()
     {
         return $this->hasMany(JobPost::class);
+    }
+
+    public function governorate()
+    {
+        return $this->belongsTo(Governorate::class);
+    }
+
+    public function city()
+    {
+        return $this->belongsTo(City::class);
     }
 }

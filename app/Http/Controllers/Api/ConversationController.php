@@ -10,9 +10,6 @@ use Illuminate\Support\Facades\RateLimiter;
 
 class ConversationController extends Controller
 {
-    /**
-     * بدء محادثة جديدة أو جلب محادثة موجودة
-     */
     public function start(Request $request)
     {
         $data = $request->validate([
@@ -24,7 +21,7 @@ class ConversationController extends Controller
 
         if ($authId === $otherId) {
             return response()->json([
-                'message' => 'لا يمكنك إنشاء محادثة مع نفسك',
+                'message' => 'لا يمكنك إنشاء محادثة مع نفسك.',
             ], 422);
         }
 
@@ -37,25 +34,22 @@ class ConversationController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'تم فتح المحادثة بنجاح',
+            'message' => 'تم فتح المحادثة بنجاح.',
             'conversation' => $conversation->load([
                 'user1:id,name',
-                'user2:id,name'
+                'user2:id,name',
             ]),
         ], 200);
     }
 
-    /**
-     * عرض محادثات المستخدم الحالي
-     */
     public function myConversations(Request $request)
     {
         $userId = $request->user()->id;
 
         $conversations = Conversation::where(function ($query) use ($userId) {
-                $query->where('user1_id', $userId)
-                    ->orWhere('user2_id', $userId);
-            })
+            $query->where('user1_id', $userId)
+                ->orWhere('user2_id', $userId);
+        })
             ->with([
                 'user1:id,name',
                 'user2:id,name',
@@ -67,8 +61,8 @@ class ConversationController extends Controller
             ->withCount([
                 'messages as unread_count' => function ($query) use ($userId) {
                     $query->where('sender_id', '!=', $userId)
-                          ->whereNull('read_at');
-                }
+                        ->whereNull('read_at');
+                },
             ])
             ->orderByDesc('last_message_at')
             ->orderByDesc('created_at')
@@ -79,9 +73,6 @@ class ConversationController extends Controller
         ], 200);
     }
 
-    /**
-     * عرض رسائل محادثة معينة
-     */
     public function messages(Request $request, Conversation $conversation)
     {
         $this->checkUserInConversation($request, $conversation);
@@ -96,20 +87,16 @@ class ConversationController extends Controller
         ], 200);
     }
 
-    /**
-     * إرسال رسالة داخل محادثة
-     */
     public function sendMessage(Request $request, Conversation $conversation)
     {
         $this->checkUserInConversation($request, $conversation);
 
         $user = $request->user();
-
         $rateKey = 'send-message:' . $user->id;
 
         if (RateLimiter::tooManyAttempts($rateKey, 20)) {
             return response()->json([
-                'message' => 'لقد أرسلت رسائل كثيرة، يرجى الانتظار قليلاً'
+                'message' => 'لقد أرسلت رسائل كثيرة، يرجى الانتظار قليلا.',
             ], 429);
         }
 
@@ -132,13 +119,11 @@ class ConversationController extends Controller
         RateLimiter::hit($rateKey, 60);
 
         return response()->json([
-            'message' => 'تم إرسال الرسالة بنجاح',
+            'message' => 'تم إرسال الرسالة بنجاح.',
             'data' => $message->load('sender:id,name'),
         ], 201);
     }
-    /**
-     * تعليم رسائل المحادثة كمقروءة
-     */
+
     public function markAsRead(Request $request, Conversation $conversation)
     {
         $this->checkUserInConversation($request, $conversation);
@@ -151,20 +136,17 @@ class ConversationController extends Controller
             ]);
 
         return response()->json([
-            'message' => 'تم تعليم الرسائل كمقروءة',
+            'message' => 'تم تعليم الرسائل كمقروءة.',
             'updated_count' => $updatedCount,
         ], 200);
     }
 
-    /**
-     * التحقق أن المستخدم طرف في المحادثة
-     */
     private function checkUserInConversation(Request $request, Conversation $conversation): void
     {
         $userId = $request->user()->id;
 
         if ($conversation->user1_id !== $userId && $conversation->user2_id !== $userId) {
-            abort(403, 'غير مسموح لك بالدخول لهذه المحادثة');
+            abort(403, 'غير مسموح لك بالدخول إلى هذه المحادثة.');
         }
     }
 }

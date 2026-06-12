@@ -18,15 +18,19 @@ class AdminContentController extends Controller
             'search' => ['nullable', 'string', 'max:255'],
             'status' => ['nullable', Rule::in(['active', 'paused', 'closed'])],
             'category_id' => ['nullable', 'exists:categories,id'],
+            'governorate_id' => ['nullable', 'exists:governorates,id'],
+            'city_id' => ['nullable', 'exists:cities,id'],
         ]);
 
-        $projects = UserProject::with(['user:id,name,email', 'category:id,name', 'skills:id,name'])
+        $projects = UserProject::with(['user:id,name,email', 'category:id,name', 'governorate:id,name', 'city:id,name,governorate_id', 'skills:id,name'])
             ->when($data['search'] ?? null, function ($query, $search) {
                 $query->where('title', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%");
             })
             ->when($data['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->when($data['category_id'] ?? null, fn ($query, $categoryId) => $query->where('category_id', $categoryId))
+            ->when($data['governorate_id'] ?? null, fn ($query, $governorateId) => $query->where('governorate_id', $governorateId))
+            ->when($data['city_id'] ?? null, fn ($query, $cityId) => $query->where('city_id', $cityId))
             ->latest()
             ->paginate(10);
 
@@ -59,14 +63,20 @@ class AdminContentController extends Controller
         $data = $request->validate([
             'search' => ['nullable', 'string', 'max:255'],
             'status' => ['nullable', Rule::in(['active', 'paused', 'closed'])],
+            'governorate_id' => ['nullable', 'exists:governorates,id'],
+            'city_id' => ['nullable', 'exists:cities,id'],
         ]);
 
-        $jobs = JobPost::with(['company.user:id,name,email', 'city'])
+        $jobs = JobPost::with(['company.user:id,name,email', 'city.governorate'])
             ->when($data['search'] ?? null, function ($query, $search) {
                 $query->where('title', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%");
             })
             ->when($data['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
+            ->when($data['city_id'] ?? null, fn ($query, $cityId) => $query->where('city_id', $cityId))
+            ->when($data['governorate_id'] ?? null, function ($query, $governorateId) {
+                $query->whereHas('city', fn ($cityQuery) => $cityQuery->where('governorate_id', $governorateId));
+            })
             ->latest()
             ->paginate(10);
 
@@ -83,8 +93,8 @@ class AdminContentController extends Controller
         $project->update(['status' => $data['status']]);
 
         return response()->json([
-            'message' => 'Project status updated successfully.',
-            'project' => $project->load(['user:id,name,email', 'category:id,name', 'skills:id,name']),
+            'message' => 'تم تحديث حالة المشروع بنجاح.',
+            'project' => $project->load(['user:id,name,email', 'category:id,name', 'governorate:id,name', 'city:id,name,governorate_id', 'skills:id,name']),
         ]);
     }
 
@@ -98,7 +108,7 @@ class AdminContentController extends Controller
         $service->update(['status' => $data['status']]);
 
         return response()->json([
-            'message' => 'Service status updated successfully.',
+            'message' => 'تم تحديث حالة الخدمة بنجاح.',
             'service' => $service->load(['user:id,name,email', 'category:id,name']),
         ]);
     }
@@ -113,8 +123,8 @@ class AdminContentController extends Controller
         $job->update(['status' => $data['status']]);
 
         return response()->json([
-            'message' => 'Job status updated successfully.',
-            'job' => $job->load(['company.user:id,name,email', 'city']),
+            'message' => 'تم تحديث حالة الوظيفة بنجاح.',
+            'job' => $job->load(['company.user:id,name,email', 'city.governorate']),
         ]);
     }
 
@@ -122,21 +132,21 @@ class AdminContentController extends Controller
     {
         UserProject::findOrFail($id)->delete();
 
-        return response()->json(['message' => 'Project deleted successfully.']);
+        return response()->json(['message' => 'تم حذف المشروع بنجاح.']);
     }
 
     public function destroyService(int $id)
     {
         Service::findOrFail($id)->delete();
 
-        return response()->json(['message' => 'Service deleted successfully.']);
+        return response()->json(['message' => 'تم حذف الخدمة بنجاح.']);
     }
 
     public function destroyJob(int $id)
     {
         JobPost::findOrFail($id)->delete();
 
-        return response()->json(['message' => 'Job deleted successfully.']);
+        return response()->json(['message' => 'تم حذف الوظيفة بنجاح.']);
     }
 
     public function categories()
@@ -155,7 +165,7 @@ class AdminContentController extends Controller
         $category = Category::create($data);
 
         return response()->json([
-            'message' => 'Category created successfully.',
+            'message' => 'تم إنشاء التصنيف بنجاح.',
             'category' => $category,
         ], 201);
     }
@@ -171,7 +181,7 @@ class AdminContentController extends Controller
         $category->update($data);
 
         return response()->json([
-            'message' => 'Category updated successfully.',
+            'message' => 'تم تحديث التصنيف بنجاح.',
             'category' => $category,
         ]);
     }
@@ -182,12 +192,12 @@ class AdminContentController extends Controller
 
         if ($category->services()->exists() || UserProject::where('category_id', $category->id)->exists()) {
             return response()->json([
-                'message' => 'Cannot delete category while it has content.',
+                'message' => 'لا يمكن حذف التصنيف لأنه مرتبط بمحتوى موجود.',
             ], 422);
         }
 
         $category->delete();
 
-        return response()->json(['message' => 'Category deleted successfully.']);
+        return response()->json(['message' => 'تم حذف التصنيف بنجاح.']);
     }
 }

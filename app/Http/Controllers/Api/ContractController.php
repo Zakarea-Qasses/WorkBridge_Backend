@@ -36,7 +36,7 @@ class ContractController extends Controller
             ->findOrFail($id);
 
         if (! $this->canSee($request, $contract)) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['message' => 'غير مصرح لك بتنفيذ هذا الإجراء'], 403);
         }
 
         return response()->json([
@@ -47,7 +47,7 @@ class ContractController extends Controller
     public function companyContracts(Request $request)
     {
         if ($request->user()->role !== 'company') {
-            return response()->json(['message' => 'Only company users can view company contracts'], 403);
+            return response()->json(['message' => 'فقط حسابات الشركات يمكنها عرض عقود الشركة'], 403);
         }
 
         $contracts = Contract::with([
@@ -69,7 +69,7 @@ class ContractController extends Controller
     public function createCompanyJobContract(Request $request, int $jobId)
     {
         if ($request->user()->role !== 'company') {
-            return response()->json(['message' => 'Only company users can create job contracts'], 403);
+            return response()->json(['message' => 'فقط حسابات الشركات يمكنها إنشاء عقود الوظائف'], 403);
         }
 
         $data = $request->validate([
@@ -80,14 +80,14 @@ class ContractController extends Controller
         $job = JobPost::with('company')->findOrFail($jobId);
 
         if (! $job->company || $job->company->user_id !== $request->user()->id) {
-            return response()->json(['message' => 'You cannot create a contract for a job you do not own'], 403);
+            return response()->json(['message' => 'لا يمكنك إنشاء عقد لوظيفة لا تملكها'], 403);
         }
 
         $freelancer = User::where('role', 'personal')->findOrFail($data['freelancer_id']);
         $contract = $this->contractService->createFromJobPost($job, $freelancer, $data['amount']);
 
         return response()->json([
-            'message' => 'Job contract created successfully.',
+            'message' => 'تم إنشاء عقد الوظيفة بنجاح.',
             'contract' => $contract->load(['client:id,name,email', 'freelancer:id,name,email', 'jobPost:id,title']),
         ], 201);
     }
@@ -97,13 +97,13 @@ class ContractController extends Controller
         $contract = Contract::findOrFail($id);
 
         if ($contract->client_id !== $request->user()->id) {
-            return response()->json(['message' => 'Only client can start contract'], 403);
+            return response()->json(['message' => 'فقط صاحب العقد يمكنه بدء العقد'], 403);
         }
 
         $contract = $this->contractService->fund($contract);
 
         return response()->json([
-            'message' => 'Contract started and amount reserved.',
+            'message' => 'تم بدء العقد وحجز المبلغ بنجاح.',
             'contract' => $contract,
         ]);
     }
@@ -113,13 +113,13 @@ class ContractController extends Controller
         $contract = Contract::findOrFail($id);
 
         if ($contract->client_id !== $request->user()->id) {
-            return response()->json(['message' => 'Only client can complete contract'], 403);
+            return response()->json(['message' => 'فقط صاحب العقد يمكنه إكمال العقد'], 403);
         }
 
         $contract = $this->contractService->complete($contract);
 
         return response()->json([
-            'message' => 'Contract completed successfully.',
+            'message' => 'تم إكمال العقد بنجاح.',
             'contract' => $contract,
         ]);
     }
@@ -129,13 +129,13 @@ class ContractController extends Controller
         $contract = Contract::findOrFail($id);
 
         if (! $this->canSee($request, $contract)) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['message' => 'غير مصرح لك بتنفيذ هذا الإجراء'], 403);
         }
 
         $contract = $this->contractService->cancel($contract);
 
         return response()->json([
-            'message' => 'Contract canceled successfully.',
+            'message' => 'تم إلغاء العقد بنجاح.',
             'contract' => $contract,
         ]);
     }

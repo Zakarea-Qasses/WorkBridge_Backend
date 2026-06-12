@@ -15,12 +15,12 @@ class AdminUserController extends Controller
         $data = $request->validate([
             'search' => ['nullable', 'string', 'max:255'],
             'role' => ['nullable', Rule::in(['personal', 'company'])],
-            'status' => ['nullable', Rule::in(['pending_review', 'under_review', 'active', 'blocked'])],
+            'status' => ['nullable', Rule::in(['unactive', 'pending_review', 'under_review', 'active', 'blocked'])],
         ]);
 
         $users = User::query()
             ->where('role', '!=', 'admin')
-            ->with(['profile.skills', 'company.skills'])
+            ->with(['profile.skills', 'profile.governorate', 'profile.city', 'company.skills', 'company.governorate', 'company.city'])
             ->when($data['search'] ?? null, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
@@ -40,16 +40,18 @@ class AdminUserController extends Controller
     public function reviewBoard()
     {
         return response()->json([
+            'unactive' => $this->usersByStatus('unactive'),
             'pending_review' => $this->usersByStatus('pending_review'),
             'under_review' => $this->usersByStatus('under_review'),
             'reviewed' => User::query()
                 ->where('role', '!=', 'admin')
                 ->whereIn('status', ['active', 'blocked'])
-                ->with(['profile.skills', 'company.skills'])
+                ->with(['profile.skills', 'profile.governorate', 'profile.city', 'company.skills', 'company.governorate', 'company.city'])
                 ->latest()
                 ->get(),
             'counts' => [
                 'pending_review' => User::where('role', '!=', 'admin')->where('status', 'pending_review')->count(),
+                'unactive' => User::where('role', '!=', 'admin')->where('status', 'unactive')->count(),
                 'under_review' => User::where('role', '!=', 'admin')->where('status', 'under_review')->count(),
                 'active' => User::where('role', '!=', 'admin')->where('status', 'active')->count(),
                 'blocked' => User::where('role', '!=', 'admin')->where('status', 'blocked')->count(),
@@ -60,7 +62,7 @@ class AdminUserController extends Controller
     public function show(int $id)
     {
         $user = User::where('role', '!=', 'admin')
-            ->with(['profile.skills', 'company.skills'])
+            ->with(['profile.skills', 'profile.governorate', 'profile.city', 'company.skills', 'company.governorate', 'company.city'])
             ->findOrFail($id);
 
         return response()->json([
@@ -80,7 +82,7 @@ class AdminUserController extends Controller
 
         return response()->json([
             'message' => 'تم نقل الحساب إلى قسم تحت المراجعة',
-            'user' => $user->load(['profile.skills', 'company.skills']),
+            'user' => $user->load(['profile.skills', 'profile.governorate', 'profile.city', 'company.skills', 'company.governorate', 'company.city']),
         ]);
     }
 
@@ -107,7 +109,7 @@ class AdminUserController extends Controller
 
         return response()->json([
             'message' => 'تم قبول الحساب بنجاح',
-            'user' => $user->load(['profile.skills', 'company.skills']),
+            'user' => $user->load(['profile.skills', 'profile.governorate', 'profile.city', 'company.skills', 'company.governorate', 'company.city']),
         ]);
     }
 
@@ -136,7 +138,7 @@ class AdminUserController extends Controller
 
         return response()->json([
             'message' => 'تم حظر الحساب بنجاح',
-            'user' => $user->load(['profile.skills', 'company.skills']),
+            'user' => $user->load(['profile.skills', 'profile.governorate', 'profile.city', 'company.skills', 'company.governorate', 'company.city']),
         ]);
     }
 
@@ -156,7 +158,7 @@ class AdminUserController extends Controller
         return User::query()
             ->where('role', '!=', 'admin')
             ->where('status', $status)
-            ->with(['profile.skills', 'company.skills'])
+            ->with(['profile.skills', 'profile.governorate', 'profile.city', 'company.skills', 'company.governorate', 'company.city'])
             ->latest()
             ->get();
     }

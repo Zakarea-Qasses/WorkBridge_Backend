@@ -36,7 +36,7 @@ class ServiceController extends Controller
     public function companyBrowse(Request $request)
     {
         if ($request->user()->role !== 'company') {
-            return response()->json(['message' => 'Only company users can browse company services page'], 403);
+            return response()->json(['message' => 'فقط حسابات الشركات يمكنها تصفح صفحة خدمات الشركة'], 403);
         }
 
         $data = $request->validate([

@@ -3,21 +3,27 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\City;
 use App\Models\Project;
 use App\Models\UserProject;
 use Illuminate\Http\Request;
 
 class UserProjectController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $projects = UserProject::with([
             'user:id,name,role',
             'category:id,name',
-/*            'governorate:id,name',
-            'city:id,name,governorate_id',*/
+            'governorate:id,name',
+            'city:id,name,governorate_id',
             'skills:id,name',
-        ])->where('status', 'active')->latest()->get();
+        ])
+            ->where('status', 'active')
+            ->when($request->governorate_id, fn ($query, $governorateId) => $query->where('governorate_id', $governorateId))
+            ->when($request->city_id, fn ($query, $cityId) => $query->where('city_id', $cityId))
+            ->latest()
+            ->get();
 
         return response()->json([
             'projects' => $projects
@@ -29,8 +35,8 @@ class UserProjectController extends Controller
         $project = UserProject::with([
             'user:id,name,role',
             'category:id,name',
-           /* 'governorate:id,name',
-            'city:id,name,governorate_id',*/
+            'governorate:id,name',
+            'city:id,name,governorate_id',
             'skills:id,name',
         ])->where('status', 'active')->findOrFail($id);
 
@@ -56,18 +62,30 @@ class UserProjectController extends Controller
             'duration_days' => ['required', 'integer', 'min:1'],
 
             'category_id' => ['required', 'exists:categories,id'],
-           /* 'governorate_id' => ['required', 'exists:governorates,id'],
-            'city_id' => ['required', 'exists:cities,id'],*/
+            'governorate_id' => ['nullable', 'exists:governorates,id'],
+            'city_id' => ['nullable', 'exists:cities,id'],
 
             'skills' => ['required', 'array'],
             'skills.*' => ['exists:skills,id'],
         ]);
 
+        if (! empty($data['governorate_id']) && ! empty($data['city_id'])) {
+            $cityBelongsToGovernorate = City::where('id', $data['city_id'])
+                ->where('governorate_id', $data['governorate_id'])
+                ->exists();
+
+            if (! $cityBelongsToGovernorate) {
+                return response()->json([
+                    'message' => 'المدينة المختارة لا تتبع للمحافظة المختارة.',
+                ], 422);
+            }
+        }
+
         $project = UserProject::create([
             'user_id' => $user->id,
             'category_id' => $data['category_id'],
-          /*  'governorate_id' => $data['governorate_id'],
-            'city_id' => $data['city_id'],*/
+            'governorate_id' => $data['governorate_id'] ?? null,
+            'city_id' => $data['city_id'] ?? null,
             'title' => $data['title'],
             'description' => $data['description'],
             'budget' => $data['budget'],
@@ -81,8 +99,8 @@ class UserProjectController extends Controller
             'message' => 'تم نشر المشروع بنجاح',
             'project' => $project->load([
                 'category',
-              /*  'governorate',
-                'city',*/
+                'governorate',
+                'city',
                 'skills',
             ])
         ], 201);
@@ -106,12 +124,24 @@ class UserProjectController extends Controller
             'duration_days' => ['sometimes', 'integer', 'min:1'],
 
             'category_id' => ['sometimes', 'exists:categories,id'],
-         /*   'governorate_id' => ['sometimes', 'exists:governorates,id'],
-            'city_id' => ['sometimes', 'exists:cities,id'],*/
+            'governorate_id' => ['nullable', 'exists:governorates,id'],
+            'city_id' => ['nullable', 'exists:cities,id'],
 
             'skills' => ['sometimes', 'array'],
             'skills.*' => ['exists:skills,id'],
         ]);
+
+        if (! empty($data['governorate_id']) && ! empty($data['city_id'])) {
+            $cityBelongsToGovernorate = City::where('id', $data['city_id'])
+                ->where('governorate_id', $data['governorate_id'])
+                ->exists();
+
+            if (! $cityBelongsToGovernorate) {
+                return response()->json([
+                    'message' => 'المدينة المختارة لا تتبع للمحافظة المختارة.',
+                ], 422);
+            }
+        }
 
         $project->update($data);
 
@@ -123,8 +153,8 @@ class UserProjectController extends Controller
             'message' => 'تم تعديل المشروع بنجاح',
             'project' => $project->load([
                 'category',
-               /* 'governorate',
-                'city',*/
+                'governorate',
+                'city',
                 'skills',
             ])
         ]);

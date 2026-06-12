@@ -38,7 +38,7 @@ class WalletController extends Controller
 
         return response()->json([
             'status' => true,
-            'message' => 'Deposit completed successfully.',
+            'message' => 'تم إيداع المبلغ بنجاح.',
             'transaction' => $transaction,
         ]);
     }
@@ -56,7 +56,7 @@ class WalletController extends Controller
 
         return response()->json([
             'status' => true,
-            'message' => 'Withdraw completed successfully.',
+            'message' => 'تم سحب المبلغ بنجاح.',
             'transaction' => $transaction,
         ]);
     }
@@ -74,7 +74,7 @@ class WalletController extends Controller
 
         return response()->json([
             'status' => true,
-            'message' => 'Amount transferred to admin wallet successfully.',
+            'message' => 'تم تحويل المبلغ إلى محفظة الأدمن بنجاح.',
             'transaction' => $transaction,
         ]);
     }

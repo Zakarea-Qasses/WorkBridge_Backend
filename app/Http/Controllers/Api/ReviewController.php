@@ -22,12 +22,12 @@ class ReviewController extends Controller
 
         if ($contract->status !== 'completed') {
             return response()->json([
-                'message' => 'You can review only after contract completion.',
+                'message' => 'يمكنك إضافة تقييم بعد اكتمال العقد فقط.',
             ], 422);
         }
 
         if (! in_array($user->id, [$contract->client_id, $contract->freelancer_id], true)) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['message' => 'غير مصرح لك بتنفيذ هذا الإجراء'], 403);
         }
 
         $reviewedUserId = $user->id === $contract->client_id
@@ -43,7 +43,7 @@ class ReviewController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Review added successfully.',
+            'message' => 'تمت إضافة التقييم بنجاح.',
             'review' => $review,
         ], 201);
     }

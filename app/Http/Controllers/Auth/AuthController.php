@@ -39,7 +39,7 @@ class AuthController extends Controller
             'email' => $data['email'],
             'password' => $data['password'], 
             'role' => $data['role'],
-            'status' => 'pending_review',
+            'status' => $data['role'] === 'personal' ? 'active' : 'unactive',
         ]);
 
         if ($user->role === 'personal') {
@@ -74,7 +74,7 @@ class AuthController extends Controller
         }
 
         // إشعار الأدمن بحساب جديد
-        if ($user->role !== 'admin') {
+        if ($user->role === 'company') {
             $admins = User::where('role', 'admin')->get();
             foreach ($admins as $admin) {
                 UserNotification::create([
@@ -124,6 +124,9 @@ class AuthController extends Controller
 
         if ($user->status === 'blocked') {
             return response()->json(['message' => 'تم حظر هذا الحساب من قبل الإدارة'], 403);
+        }
+        if ($user->role === 'company' && $user->status === 'unactive') {
+            return response()->json(['message' => 'حساب الشركة بانتظار توثيق الإدارة.'], 403);
         }
         if ($user->role !== 'admin' && $user->status !== 'active') {
             return response()->json(['message' => 'حسابك بانتظار مراجعة الإدارة'], 403);

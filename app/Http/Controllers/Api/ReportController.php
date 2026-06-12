@@ -41,13 +41,13 @@ class ReportController extends Controller
 
             if ($target->id === $reporter->id) {
                 return response()->json([
-                    'message' => 'لا يمكنك الإبلاغ عن نفسك'
+                    'message' => 'لا يمكنك الإبلاغ عن نفسك.',
                 ], 422);
             }
 
             if ($target->role === 'admin') {
                 return response()->json([
-                    'message' => 'لا يمكن الإبلاغ عن الأدمن'
+                    'message' => 'لا يمكن الإبلاغ عن الأدمن.',
                 ], 403);
             }
         }
@@ -57,7 +57,7 @@ class ReportController extends Controller
 
             if ($target->user_id === $reporter->id) {
                 return response()->json([
-                    'message' => 'لا يمكنك الإبلاغ عن مشروعك'
+                    'message' => 'لا يمكنك الإبلاغ عن مشروعك.',
                 ], 422);
             }
         }
@@ -67,7 +67,7 @@ class ReportController extends Controller
 
             if ($target->user_id === $reporter->id) {
                 return response()->json([
-                    'message' => 'لا يمكنك الإبلاغ عن خدمتك'
+                    'message' => 'لا يمكنك الإبلاغ عن خدمتك.',
                 ], 422);
             }
         }
@@ -77,7 +77,7 @@ class ReportController extends Controller
 
             if (! in_array($reporter->id, [$contract->client_id, $contract->freelancer_id], true)) {
                 return response()->json([
-                    'message' => 'لا يمكنك فتح نزاع على عقد لا يخصك'
+                    'message' => 'لا يمكنك فتح نزاع على عقد لا يخصك.',
                 ], 403);
             }
 
@@ -89,7 +89,7 @@ class ReportController extends Controller
 
             if (! in_array($reporter->id, [$contract->client_id, $contract->freelancer_id], true)) {
                 return response()->json([
-                    'message' => 'لا يمكنك ربط البلاغ بعقد لا يخصك'
+                    'message' => 'لا يمكنك ربط البلاغ بعقد لا يخصك.',
                 ], 403);
             }
         }
@@ -118,13 +118,13 @@ class ReportController extends Controller
                 'user_id' => $admin->id,
                 'type' => 'new_report',
                 'title' => 'بلاغ جديد',
-                'message' => $reporter->name . ' أرسل بلاغاً جديداً على ' . $data['target_type'],
+                'message' => $reporter->name . ' أرسل بلاغا جديدا على ' . $data['target_type'],
             ]);
         }
 
         return response()->json([
-            'message' => 'تم إرسال البلاغ بنجاح',
-            'report' => $report
+            'message' => 'تم إرسال البلاغ بنجاح.',
+            'report' => $report,
         ], 201);
     }
 
@@ -157,7 +157,7 @@ class ReportController extends Controller
             ->get();
 
         return response()->json([
-            'reports' => $reports
+            'reports' => $reports,
         ]);
     }
 
@@ -193,13 +193,13 @@ class ReportController extends Controller
                 ? 'تم قبول البلاغ'
                 : 'تم رفض البلاغ',
             'message' => $data['status'] === 'accepted'
-                ? 'تم قبول البلاغ الذي أرسلته'
-                : 'تم رفض البلاغ الذي أرسلته',
+                ? 'تم قبول البلاغ الذي أرسلته.'
+                : 'تم رفض البلاغ الذي أرسلته.',
         ]);
 
         return response()->json([
-            'message' => 'تم تحديث قرار الأدمن',
-            'report' => $report
+            'message' => 'تم تحديث قرار الأدمن.',
+            'report' => $report,
         ]);
     }
 }
