@@ -6,15 +6,40 @@ use App\Http\Controllers\Controller;
 use App\Models\Review;
 use App\Models\Service;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rule;
 
 class ServiceController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $data = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', Rule::in(['active', 'paused', 'closed'])],
+            'category_id' => ['nullable', 'exists:categories,id'],
+            'min_price' => ['nullable', 'numeric', 'min:0'],
+            'max_price' => ['nullable', 'numeric', 'min:0'],
+            'type' => ['nullable', 'string', 'max:255'],
+        ]);
+
         $services = Service::with([
             'user:id,name,role',
             'category:id,name'
-        ])->where('status', 'active')->latest()->get();
+        ])
+            ->where('status', $data['status'] ?? 'active')
+            ->when($data['search'] ?? null, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('title', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%")
+                        ->orWhereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', "%{$search}%"));
+                });
+            })
+            ->when($data['category_id'] ?? null, fn ($query, $categoryId) => $query->where('category_id', $categoryId))
+            ->when($data['min_price'] ?? null, fn ($query, $price) => $query->where('price', '>=', $price))
+            ->when($data['max_price'] ?? null, fn ($query, $price) => $query->where('price', '<=', $price))
+            ->when(($data['type'] ?? null) && Schema::hasColumn('services', 'type'), fn ($query) => $query->where('type', $data['type']))
+            ->latest()
+            ->get();
 
         return response()->json([
             'services' => $services

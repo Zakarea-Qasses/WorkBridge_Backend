@@ -15,7 +15,12 @@ class Profile extends Model
     'address',
     'description',
     'bio',
+    'rating_avg',
      ];
+
+    protected $casts = [
+     'rating_avg' => 'decimal:2',
+    ];
 
     public function user()
     {

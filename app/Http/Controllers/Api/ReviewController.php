@@ -22,12 +22,12 @@ class ReviewController extends Controller
 
         if ($contract->status !== 'completed') {
             return response()->json([
-                'message' => 'يمكنك إضافة تقييم بعد اكتمال العقد فقط.',
+                'message' => 'You can add a review only after the contract is completed.',
             ], 422);
         }
 
         if (! in_array($user->id, [$contract->client_id, $contract->freelancer_id], true)) {
-            return response()->json(['message' => 'غير مصرح لك بتنفيذ هذا الإجراء'], 403);
+            return response()->json(['message' => 'You are not allowed to do this action.'], 403);
         }
 
         $reviewedUserId = $user->id === $contract->client_id
@@ -43,15 +43,52 @@ class ReviewController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'تمت إضافة التقييم بنجاح.',
+            'message' => 'Review added successfully.',
             'review' => $review,
         ], 201);
+    }
+
+    public function update(Request $request, int $id)
+    {
+        $review = Review::findOrFail($id);
+
+        if ($review->reviewer_id !== $request->user()->id) {
+            return response()->json(['message' => 'You are not allowed to update this review.'], 403);
+        }
+
+        $data = $request->validate([
+            'rating' => ['sometimes', 'integer', 'min:1', 'max:5'],
+            'comment' => ['nullable', 'string'],
+        ]);
+
+        $review->update($data);
+
+        return response()->json([
+            'message' => 'Review updated successfully.',
+            'review' => $review,
+        ]);
+    }
+
+    public function destroy(Request $request, int $id)
+    {
+        $review = Review::findOrFail($id);
+
+        if ($review->reviewer_id !== $request->user()->id) {
+            return response()->json(['message' => 'You are not allowed to delete this review.'], 403);
+        }
+
+        $review->delete();
+
+        return response()->json([
+            'message' => 'Review deleted successfully.',
+        ]);
     }
 
     public function userReviews(int $userId)
     {
         $reviews = Review::with('reviewer:id,name,email')
             ->where('reviewed_user_id', $userId)
+            ->whereHas('contract', fn ($query) => $query->where('freelancer_id', $userId))
             ->latest()
             ->get();
 
