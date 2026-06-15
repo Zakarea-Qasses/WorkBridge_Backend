@@ -64,7 +64,7 @@ class JobApplyController extends Controller
         $applications = JobApply::with(['user:id,name,email', 'user.profile'])
             ->where('job_id', $job->id)
             ->latest()
-            ->get();
+            ->paginate(15);
 
         return response()->json([
             'applications' => $applications,
@@ -101,7 +101,7 @@ class JobApplyController extends Controller
         $applications = JobApply::with(['job.company:id,company_name,logo', 'job.city.governorate'])
             ->where('user_id', $request->user()->id)
             ->latest()
-            ->get();
+            ->paginate(15);
 
         return response()->json([
             'applications' => $applications,

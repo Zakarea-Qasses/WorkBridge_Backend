@@ -73,7 +73,7 @@ class ServiceRequestController extends Controller
                 $query->where('user_id', $request->user()->id);
             })
             ->latest()
-            ->get();
+            ->paginate(15);
 
         return response()->json([
             'requests' => $requests,
@@ -88,7 +88,7 @@ class ServiceRequestController extends Controller
         ])
             ->where('client_id', $request->user()->id)
             ->latest()
-            ->get();
+            ->paginate(15);
 
         return response()->json([
             'requests' => $requests,

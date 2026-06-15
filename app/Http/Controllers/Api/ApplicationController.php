@@ -83,7 +83,7 @@ class ApplicationController extends Controller
                 $query->where('user_id', $user->id);
             })
             ->latest()
-            ->get();
+            ->paginate(15);
 
         return response()->json([
             'applications' => $applications,
@@ -97,7 +97,7 @@ class ApplicationController extends Controller
         ])
             ->where('user_id', $request->user()->id)
             ->latest()
-            ->get();
+            ->paginate(15);
 
         return response()->json([
             'applications' => $applications,

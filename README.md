@@ -58,3 +58,21 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
 # WorkBridge_Backend
+
+## Production performance checklist
+
+Run these commands during deployment after installing dependencies and running migrations. Do not run them blindly in local development because cached config and routes can hide `.env` or route changes until cleared.
+
+```bash
+php artisan optimize:clear
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+```
+
+Cache readiness notes:
+
+- Routes use controller actions instead of Closure routes, so `php artisan route:cache` is supported.
+- Runtime `env()` usage should stay inside `config/*.php`; application code should read values with `config()`.
+- Keep production `.env` values at `APP_ENV=production` and `APP_DEBUG=false`.
+- No Laravel Debugbar, Telescope, Clockwork, or similar debug package is installed in `composer.json`.

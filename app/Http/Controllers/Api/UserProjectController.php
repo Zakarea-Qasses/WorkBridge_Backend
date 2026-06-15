@@ -47,7 +47,7 @@ class UserProjectController extends Controller
             ->when($data['max_price'] ?? null, fn ($query, $price) => $query->where('budget', '<=', $price))
             ->when(($data['type'] ?? null) && Schema::hasColumn('user_projects', 'type'), fn ($query) => $query->where('type', $data['type']))
             ->latest()
-            ->get();
+            ->paginate(15);
 
         return response()->json([
             'projects' => $projects

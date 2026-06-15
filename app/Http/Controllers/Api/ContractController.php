@@ -20,10 +20,12 @@ class ContractController extends Controller
         $userId = $request->user()->id;
 
         $contracts = Contract::with(['client:id,name,email', 'freelancer:id,name,email', 'project:id,title', 'serviceRequest:id,title'])
-            ->where('client_id', $userId)
-            ->orWhere('freelancer_id', $userId)
+            ->where(function ($query) use ($userId) {
+                $query->where('client_id', $userId)
+                    ->orWhere('freelancer_id', $userId);
+            })
             ->latest()
-            ->get();
+            ->paginate(10);
 
         return response()->json([
             'contracts' => $contracts,

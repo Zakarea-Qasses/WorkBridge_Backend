@@ -36,7 +36,7 @@ class JobPostController extends Controller
             ->when($data['min_salary'] ?? null, fn ($query, $salary) => $query->where('salary', '>=', $salary))
             ->when($data['max_salary'] ?? null, fn ($query, $salary) => $query->where('salary', '<=', $salary))
             ->latest()
-            ->get();
+            ->paginate(15);
 
         return response()->json([
             'jobs' => $jobs
@@ -66,7 +66,7 @@ class JobPostController extends Controller
         $jobs = JobPost::with('city.governorate')
             ->where('company_id', $company->id)
             ->latest()
-            ->get();
+            ->paginate(15);
 
         return response()->json([
             'jobs' => $jobs

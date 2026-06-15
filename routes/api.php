@@ -4,11 +4,12 @@ use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\AdminCompanyVerificationController;
 use App\Http\Controllers\Api\AdminContentController;
 use App\Http\Controllers\Api\AdminSettingController;
+use App\Http\Controllers\Api\AuthenticatedUserController;
 use App\Http\Controllers\Api\ApplicationController;
 use App\Http\Controllers\Api\CategoryController;
-use Illuminate\Http\Request;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Auth\PasswordResetTokenController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\ConversationController;
@@ -28,9 +29,7 @@ use App\Http\Controllers\Api\WalletController;
 use App\Http\Controllers\Api\JobPostController;
 use App\Http\Controllers\Api\JobApplyController;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
+Route::get('/user', [AuthenticatedUserController::class, 'show'])->middleware('auth:sanctum');
 
 /*
 |--------------------------------------------------------------------------
@@ -54,11 +53,7 @@ Route::post('/email/resend', [AuthController::class, 'resend']);
 Route::post('/forgot-password', [ForgotPasswordController::class, 'forgotPassword']);
 Route::post('/reset-password', [ResetPasswordController::class, 'resetPassword']);
 
-Route::get('/reset-password/{token}', function ($token) {
-    return response()->json([
-        'token' => $token,
-    ]);
-})->name('password.reset');
+Route::get('/reset-password/{token}', [PasswordResetTokenController::class, 'show'])->name('password.reset');
 
 
 // |----Logout & User Info---|
@@ -67,11 +62,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::middleware('verified')->group(function () {
-        Route::get('/me', function (Request $request) {
-            return response()->json([
-                'user' => $request->user(),
-            ]);
-        });
+        Route::get('/me', [AuthenticatedUserController::class, 'me']);
     });
 
 });

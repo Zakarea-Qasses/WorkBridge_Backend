@@ -39,7 +39,7 @@ class ServiceController extends Controller
             ->when($data['max_price'] ?? null, fn ($query, $price) => $query->where('price', '<=', $price))
             ->when(($data['type'] ?? null) && Schema::hasColumn('services', 'type'), fn ($query) => $query->where('type', $data['type']))
             ->latest()
-            ->get();
+            ->paginate(15);
 
         return response()->json([
             'services' => $services
@@ -82,12 +82,18 @@ class ServiceController extends Controller
                 });
             })
             ->when($data['category_id'] ?? null, fn ($query, $categoryId) => $query->where('category_id', $categoryId))
+            ->select('services.*')
+            ->selectSub(
+                Review::selectRaw('AVG(rating)')
+                    ->whereColumn('reviewed_user_id', 'services.user_id'),
+                'rating_avg'
+            )
+            ->withCount(['requests as orders_count'])
             ->latest()
             ->paginate(9);
 
         $services->getCollection()->transform(function ($service) {
-            $service->rating_avg = round((float) Review::where('reviewed_user_id', $service->user_id)->avg('rating'), 2);
-            $service->orders_count = $service->requests()->count();
+            $service->rating_avg = round((float) $service->rating_avg, 2);
 
             return $service;
         });
