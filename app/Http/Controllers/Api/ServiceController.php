@@ -39,7 +39,7 @@ class ServiceController extends Controller
             ->when($data['max_price'] ?? null, fn ($query, $price) => $query->where('price', '<=', $price))
             ->when(($data['type'] ?? null) && Schema::hasColumn('services', 'type'), fn ($query) => $query->where('type', $data['type']))
             ->latest()
-            ->paginate(15);
+            ->get();
 
         return response()->json([
             'services' => $services
