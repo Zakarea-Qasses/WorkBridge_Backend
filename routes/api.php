@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\UserSettingController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\WalletController;
 use App\Http\Controllers\Api\JobPostController;
+use App\Http\Controllers\Api\JobApplyController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -135,6 +136,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 // |----Reviews---|
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/reviews', [ReviewController::class, 'store']);
+    Route::put('/reviews/{id}', [ReviewController::class, 'update']);
+    Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
 });
 Route::get('/users/{userId}/reviews', [ReviewController::class, 'userReviews']);
 
@@ -288,4 +291,14 @@ Route::middleware(['auth:sanctum', 'role:company'])->group(function () {
     Route::post('/jobs/{id}/pause', [JobPostController::class, 'pause']);
     Route::post('/jobs/{id}/activate', [JobPostController::class, 'activate']);
     Route::delete('/jobs/{id}', [JobPostController::class, 'destroy']);
+});
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/jobs/{job}/apply', [JobApplyController::class, 'store']);
+    Route::get('/my-job-applications', [JobApplyController::class, 'myApplications']);
+});
+
+Route::middleware(['auth:sanctum', 'role:company'])->group(function () {
+    Route::get('/jobs/{job}/applications', [JobApplyController::class, 'applications']);
+    Route::patch('/job-applications/{id}/status', [JobApplyController::class, 'updateStatus']);
 });

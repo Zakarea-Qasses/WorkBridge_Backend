@@ -28,11 +28,12 @@ class ProfileController extends Controller
             ], 404);
         }
 
-        $reviews = Review::where('reviewed_user_id', $user->id);
+        $reviews = Review::where('reviewed_user_id', $user->id)
+            ->whereHas('contract', fn ($query) => $query->where('freelancer_id', $user->id));
 
         return response()->json([
             'profile' => $profile->load(['skills', 'governorate', 'city']),
-            'rating_avg' => round((float) $reviews->avg('rating'), 2),
+            'rating_avg' => (float) $profile->rating_avg,
             'reviews_count' => $reviews->count(),
         ], 200);
     }

@@ -7,11 +7,24 @@ use App\Models\City;
 use App\Models\Project;
 use App\Models\UserProject;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rule;
 
 class UserProjectController extends Controller
 {
     public function index(Request $request)
     {
+        $data = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', Rule::in(['active', 'paused', 'closed'])],
+            'category_id' => ['nullable', 'exists:categories,id'],
+            'governorate_id' => ['nullable', 'exists:governorates,id'],
+            'city_id' => ['nullable', 'exists:cities,id'],
+            'min_price' => ['nullable', 'numeric', 'min:0'],
+            'max_price' => ['nullable', 'numeric', 'min:0'],
+            'type' => ['nullable', 'string', 'max:255'],
+        ]);
+
         $projects = UserProject::with([
             'user:id,name,role',
             'category:id,name',
@@ -19,9 +32,20 @@ class UserProjectController extends Controller
             'city:id,name,governorate_id',
             'skills:id,name',
         ])
-            ->where('status', 'active')
-            ->when($request->governorate_id, fn ($query, $governorateId) => $query->where('governorate_id', $governorateId))
-            ->when($request->city_id, fn ($query, $cityId) => $query->where('city_id', $cityId))
+            ->where('status', $data['status'] ?? 'active')
+            ->when($data['search'] ?? null, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('title', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%")
+                        ->orWhereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', "%{$search}%"));
+                });
+            })
+            ->when($data['category_id'] ?? null, fn ($query, $categoryId) => $query->where('category_id', $categoryId))
+            ->when($data['governorate_id'] ?? null, fn ($query, $governorateId) => $query->where('governorate_id', $governorateId))
+            ->when($data['city_id'] ?? null, fn ($query, $cityId) => $query->where('city_id', $cityId))
+            ->when($data['min_price'] ?? null, fn ($query, $price) => $query->where('budget', '>=', $price))
+            ->when($data['max_price'] ?? null, fn ($query, $price) => $query->where('budget', '<=', $price))
+            ->when(($data['type'] ?? null) && Schema::hasColumn('user_projects', 'type'), fn ($query) => $query->where('type', $data['type']))
             ->latest()
             ->get();
 

@@ -5,17 +5,36 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\JobPost;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class JobPostController extends Controller
 {
     public function index(Request $request)
     {
+        $data = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', Rule::in(['active', 'paused', 'closed'])],
+            'city_id' => ['nullable', 'exists:cities,id'],
+            'governorate_id' => ['nullable', 'exists:governorates,id'],
+            'min_salary' => ['nullable', 'numeric', 'min:0'],
+            'max_salary' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
         $jobs = JobPost::with(['company:id,company_name,logo', 'city.governorate'])
-            ->where('status', 'active')
-            ->when($request->city_id, fn ($query, $cityId) => $query->where('city_id', $cityId))
-            ->when($request->governorate_id, function ($query, $governorateId) {
+            ->where('status', $data['status'] ?? 'active')
+            ->when($data['search'] ?? null, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('title', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%")
+                        ->orWhereHas('company', fn ($companyQuery) => $companyQuery->where('company_name', 'like', "%{$search}%"));
+                });
+            })
+            ->when($data['city_id'] ?? null, fn ($query, $cityId) => $query->where('city_id', $cityId))
+            ->when($data['governorate_id'] ?? null, function ($query, $governorateId) {
                 $query->whereHas('city', fn ($cityQuery) => $cityQuery->where('governorate_id', $governorateId));
             })
+            ->when($data['min_salary'] ?? null, fn ($query, $salary) => $query->where('salary', '>=', $salary))
+            ->when($data['max_salary'] ?? null, fn ($query, $salary) => $query->where('salary', '<=', $salary))
             ->latest()
             ->get();
 
