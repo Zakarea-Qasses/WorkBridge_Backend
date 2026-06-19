@@ -57,4 +57,9 @@ class User extends Authenticatable implements MustVerifyEmail
     public function receivedReviews(){
         return $this->hasMany(Review::class, 'reviewed_user_id');
     }
+
+    public function requestedCompanyDocuments()
+    {
+        return $this->hasMany(CompanyDocumentRequest::class, 'requested_by');
+    }
 }

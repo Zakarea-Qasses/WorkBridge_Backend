@@ -35,6 +35,11 @@ class Company extends Model
         return $this->hasMany(JobPost::class);
     }
 
+    public function documentRequests()
+    {
+        return $this->hasMany(CompanyDocumentRequest::class);
+    }
+
     public function governorate()
     {
         return $this->belongsTo(Governorate::class);

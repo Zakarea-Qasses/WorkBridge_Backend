@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\AdminCompanyVerificationController;
+use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\AdminContentController;
 use App\Http\Controllers\Api\AdminSettingController;
 use App\Http\Controllers\Api\AuthenticatedUserController;
@@ -244,7 +244,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 
     Route::delete('/users/{id}', [AdminUserController::class, 'destroy']);
 
-    Route::get('/companies', [AdminCompanyVerificationController::class, 'index']);
+    Route::get('/companies', [AdminCompanyVerificationController::class,'index']);
     Route::get('/companies/pending', [AdminCompanyVerificationController::class, 'pending']);
     Route::post('/companies/{id}/verify', [AdminCompanyVerificationController::class, 'verify']);
     Route::post('/companies/{id}/unverify', [AdminCompanyVerificationController::class, 'unverify']);
