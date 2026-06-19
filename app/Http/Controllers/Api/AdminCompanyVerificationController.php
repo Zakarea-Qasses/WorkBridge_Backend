@@ -3,9 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Mail\CompanyDocumentRequestMail;
 use App\Models\Company;
+use App\Models\CompanyDocumentRequest;
 use App\Models\UserNotification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use Throwable;
 
 class AdminCompanyVerificationController extends Controller
 {
@@ -68,6 +72,73 @@ class AdminCompanyVerificationController extends Controller
             'company' => $company->fresh()->load(['user:id,name,email,status', 'skills', 'governorate', 'city']),
         ]);
     }
+
+    public function requestDocument(Request $request, int $id)
+{
+    $data = $request->validate([
+        'document_name' => ['required', 'string', 'max:255'],
+        'reason' => ['required', 'string', 'max:2000'],
+    ]);
+
+    $company = Company::with('user:id,name,email')
+        ->findOrFail($id);
+
+    if (!$company->user || empty($company->user->email)) {
+        return response()->json([
+            'message' => 'لا يوجد بريد إلكتروني مرتبط بهذه الشركة.',
+        ], 422);
+    }
+
+    /*
+     * نحفظ الطلب أولاً بحالة pending.
+     * بذلك يبقى الطلب محفوظاً حتى لو فشل إرسال البريد.
+     */
+    $documentRequest = CompanyDocumentRequest::create([
+        'company_id' => $company->id,
+        'requested_by' => $request->user()->id,
+        'document_name' => $data['document_name'],
+        'reason' => $data['reason'],
+        'recipient_email' => $company->user->email,
+        'status' => CompanyDocumentRequest::STATUS_PENDING,
+    ]);
+
+    try {
+        /*
+         * الـ Mailable يحتاج علاقة company لأنه يستخدم اسم الشركة
+         * داخل عنوان ومحتوى البريد.
+         */
+        $documentRequest->load('company');
+
+        Mail::to($documentRequest->recipient_email)
+            ->send(new CompanyDocumentRequestMail($documentRequest));
+
+        $documentRequest->update([
+            'status' => CompanyDocumentRequest::STATUS_SENT,
+            'sent_at' => now(),
+            'failure_message' => null,
+        ]);
+
+        return response()->json([
+            'message' => 'تم حفظ طلب المستند وإرساله إلى بريد الشركة بنجاح.',
+            'document_request' => $documentRequest->fresh()->load([
+                'company:id,company_name,user_id',
+                'requestedBy:id,name,email',
+            ]),
+        ], 201);
+    } catch (Throwable $exception) {
+        report($exception);
+
+        $documentRequest->update([
+            'status' => CompanyDocumentRequest::STATUS_FAILED,
+            'failure_message' => $exception->getMessage(),
+        ]);
+
+        return response()->json([
+            'message' => 'تم حفظ الطلب، لكن تعذر إرسال البريد الإلكتروني.',
+            'document_request' => $documentRequest->fresh(),
+        ], 500);
+    }
+}
 
     public function unverify(int $id)
     {

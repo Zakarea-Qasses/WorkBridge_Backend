@@ -247,6 +247,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::get('/companies', [AdminCompanyVerificationController::class,'index']);
     Route::get('/companies/pending', [AdminCompanyVerificationController::class, 'pending']);
     Route::post('/companies/{id}/verify', [AdminCompanyVerificationController::class, 'verify']);
+    Route::post('/companies/{id}/request-document', [AdminCompanyVerificationController::class, 'requestDocument']);
     Route::post('/companies/{id}/unverify', [AdminCompanyVerificationController::class, 'unverify']);
 
     Route::get('/content/projects', [AdminContentController::class, 'projects']);
