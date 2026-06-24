@@ -82,7 +82,7 @@ class UserProjectController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string'],
-            'budget' => ['required', 'numeric', 'min:0'],
+            'budget' => ['required', 'numeric', 'min:1'],
             'duration_days' => ['required', 'integer', 'min:1'],
 
             'category_id' => ['required', 'exists:categories,id'],
@@ -94,7 +94,7 @@ class UserProjectController extends Controller
         ]);
 
         if (! empty($data['governorate_id']) && ! empty($data['city_id'])) {
-            $cityBelongsToGovernorate = City::where('id', $data['city_id'])
+            $cityBelongsToGovernorate = City::where('id', $cityId)
                 ->where('governorate_id', $data['governorate_id'])
                 ->exists();
 
@@ -144,7 +144,7 @@ class UserProjectController extends Controller
         $data = $request->validate([
             'title' => ['sometimes', 'string', 'max:255'],
             'description' => ['sometimes', 'string'],
-            'budget' => ['sometimes', 'numeric', 'min:0'],
+            'budget' => ['sometimes', 'numeric', 'min:1'],
             'duration_days' => ['sometimes', 'integer', 'min:1'],
 
             'category_id' => ['sometimes', 'exists:categories,id'],
@@ -155,9 +155,12 @@ class UserProjectController extends Controller
             'skills.*' => ['exists:skills,id'],
         ]);
 
-        if (! empty($data['governorate_id']) && ! empty($data['city_id'])) {
+        $governorateId = $data['governorate_id'] ?? $project->governorate_id;
+        $cityId = $data['city_id'] ?? $project->city_id;
+
+        if (! empty($governorateId) && ! empty($cityId)) {
             $cityBelongsToGovernorate = City::where('id', $data['city_id'])
-                ->where('governorate_id', $data['governorate_id'])
+                ->where('governorate_id', $governorateId)
                 ->exists();
 
             if (! $cityBelongsToGovernorate) {

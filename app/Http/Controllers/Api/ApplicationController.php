@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Application;
+use App\Models\Contract;
 use App\Models\UserNotification;
 use App\Models\UserProject;
 use App\Services\ContractService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ApplicationController extends Controller
 {
@@ -114,15 +116,29 @@ class ApplicationController extends Controller
             ], 403);
         }
 
-        $application->update([
-            'status' => 'accepted',
-        ]);
+        if ($application->status !== 'pending') {
+            return response()->json([
+                'message' => 'Only pending applications can be accepted.',
+            ], 422);
+        }
 
-        Application::where('user_project_id', $application->user_project_id)
-            ->where('id', '!=', $application->id)
-            ->update(['status' => 'rejected']);
+        if (Contract::where('user_project_id', $application->user_project_id)->exists()) {
+            return response()->json([
+                'message' => 'A contract already exists for this project.',
+            ], 409);
+        }
 
-        $contract = $this->contractService->createFromApplication($application);
+        $contract = DB::transaction(function () use ($application) {
+            $application->update([
+                'status' => 'accepted',
+            ]);
+
+            Application::where('user_project_id', $application->user_project_id)
+                ->where('id', '!=', $application->id)
+                ->update(['status' => 'rejected']);
+
+            return $this->contractService->createFromApplication($application->fresh('project'));
+        });
 
         UserNotification::create([
             'user_id' => $application->user_id,

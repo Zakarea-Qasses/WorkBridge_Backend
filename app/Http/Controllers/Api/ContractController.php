@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Contract;
+use App\Models\JobApply;
 use App\Models\JobPost;
 use App\Models\User;
 use App\Services\ContractService;
@@ -86,6 +87,18 @@ class ContractController extends Controller
         }
 
         $freelancer = User::where('role', 'personal')->findOrFail($data['freelancer_id']);
+
+        $acceptedApplication = JobApply::where('job_id', $job->id)
+            ->where('user_id', $freelancer->id)
+            ->where('status', 'accepted')
+            ->exists();
+
+        if (! $acceptedApplication) {
+            return response()->json([
+                'message' => 'A job contract can only be created for an accepted job application.',
+            ], 422);
+        }
+
         $contract = $this->contractService->createFromJobPost($job, $freelancer, $data['amount']);
 
         return response()->json([

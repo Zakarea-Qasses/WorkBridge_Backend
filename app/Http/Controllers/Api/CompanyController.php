@@ -47,9 +47,12 @@ class CompanyController extends Controller
             'skills.*' => ['string', 'max:255'],
         ]);
 
-        if (! empty($data['governorate_id']) && ! empty($data['city_id'])) {
-            $cityBelongsToGovernorate = City::where('id', $data['city_id'])
-                ->where('governorate_id', $data['governorate_id'])
+        $governorateId = $data['governorate_id'] ?? $company->governorate_id;
+        $cityId = $data['city_id'] ?? $company->city_id;
+
+        if (! empty($governorateId) && ! empty($cityId)) {
+            $cityBelongsToGovernorate = City::where('id', $cityId)
+                ->where('governorate_id', $governorateId)
                 ->exists();
 
             if (! $cityBelongsToGovernorate) {

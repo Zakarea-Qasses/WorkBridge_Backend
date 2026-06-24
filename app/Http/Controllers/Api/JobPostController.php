@@ -96,7 +96,7 @@ class JobPostController extends Controller
             'description' => ['required', 'string'],
             'location_type' => ['nullable', 'in:remote,on_site,hybrid'],
             'city_id' => ['nullable', 'exists:cities,id'],
-            'salary' => ['nullable', 'numeric', 'min:0'],
+            'salary' => ['nullable', 'numeric', 'min:1'],
         ]);
 
         $job = JobPost::create([
@@ -131,7 +131,7 @@ class JobPostController extends Controller
             'description' => ['sometimes', 'string'],
             'location_type' => ['nullable', 'in:remote,on_site,hybrid'],
             'city_id' => ['nullable', 'exists:cities,id'],
-            'salary' => ['nullable', 'numeric', 'min:0'],
+            'salary' => ['nullable', 'numeric', 'min:1'],
             'status' => ['sometimes', 'in:active,paused,closed'],
         ]);
 

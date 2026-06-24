@@ -117,7 +117,7 @@ class ServiceController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'category_id' => ['required', 'exists:categories,id'],
-            'price' => ['required', 'numeric', 'min:0'],
+            'price' => ['required', 'numeric', 'min:1'],
             'delivery_days' => ['required', 'integer', 'min:1'],
             'description' => ['nullable', 'string'],
         ]);
@@ -152,7 +152,7 @@ class ServiceController extends Controller
         $data = $request->validate([
             'title' => ['sometimes', 'string', 'max:255'],
             'category_id' => ['sometimes', 'exists:categories,id'],
-            'price' => ['sometimes', 'numeric', 'min:0'],
+            'price' => ['sometimes', 'numeric', 'min:1'],
             'delivery_days' => ['sometimes', 'integer', 'min:1'],
             'description' => ['nullable', 'string'],
         ]);

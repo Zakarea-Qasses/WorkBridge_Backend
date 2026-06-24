@@ -19,6 +19,9 @@ class ContractService
     public function createFromApplication(Application $application): Contract
     {
         $amount = (float) $application->price;
+        $this->assertPositiveAmount($amount);
+        $this->assertDifferentParties($application->project->user_id, $application->user_id);
+
         $split = $this->splitAmount($amount);
 
         return Contract::firstOrCreate(
@@ -38,6 +41,9 @@ class ContractService
     public function createFromServiceRequest(ServiceRequest $serviceRequest): Contract
     {
         $amount = (float) $serviceRequest->service->price;
+        $this->assertPositiveAmount($amount);
+        $this->assertDifferentParties($serviceRequest->client_id, $serviceRequest->service->user_id);
+
         $split = $this->splitAmount($amount);
 
         return Contract::firstOrCreate(
@@ -55,17 +61,24 @@ class ContractService
 
     public function createFromJobPost(JobPost $jobPost, User $freelancer, float $amount): Contract
     {
+        $this->assertPositiveAmount($amount);
+        $this->assertDifferentParties($jobPost->company->user_id, $freelancer->id);
+
         $split = $this->splitAmount($amount);
 
-        return Contract::create([
-            'client_id' => $jobPost->company->user_id,
-            'freelancer_id' => $freelancer->id,
-            'job_post_id' => $jobPost->id,
-            'amount' => $amount,
-            'commission_amount' => $split['commission'],
-            'freelancer_amount' => $split['freelancer'],
-            'status' => 'pending',
-        ]);
+        return Contract::firstOrCreate(
+            [
+                'job_post_id' => $jobPost->id,
+                'freelancer_id' => $freelancer->id,
+            ],
+            [
+                'client_id' => $jobPost->company->user_id,
+                'amount' => $amount,
+                'commission_amount' => $split['commission'],
+                'freelancer_amount' => $split['freelancer'],
+                'status' => 'pending',
+            ]
+        );
     }
 
     public function fund(Contract $contract): Contract
@@ -272,6 +285,8 @@ class ContractService
 
     private function moveIn(Wallet $wallet, ?int $userId, string $type, float $amount, string $description): WalletTransaction
     {
+        $this->assertPositiveAmount($amount);
+
         $before = (float) $wallet->balance;
         $after = $before + $amount;
 
@@ -282,8 +297,16 @@ class ContractService
 
     private function moveOut(Wallet $wallet, ?int $userId, string $type, float $amount, string $description): WalletTransaction
     {
+        $this->assertPositiveAmount($amount);
+
         $before = (float) $wallet->balance;
         $after = $before - $amount;
+
+        if ($after < 0) {
+            throw ValidationException::withMessages([
+                'amount' => 'Wallet balance cannot be negative.',
+            ]);
+        }
 
         $wallet->update(['balance' => $after]);
 
@@ -307,11 +330,31 @@ class ContractService
 
     private function splitAmount(float $amount): array
     {
+        $this->assertPositiveAmount($amount);
+
         $commission = round($amount * $this->commissionRate, 2);
 
         return [
             'commission' => $commission,
             'freelancer' => round($amount - $commission, 2),
         ];
+    }
+
+    private function assertPositiveAmount(float $amount): void
+    {
+        if ($amount <= 0) {
+            throw ValidationException::withMessages([
+                'amount' => 'Amount must be greater than zero.',
+            ]);
+        }
+    }
+
+    private function assertDifferentParties(int $clientId, int $freelancerId): void
+    {
+        if ($clientId === $freelancerId) {
+            throw ValidationException::withMessages([
+                'contract' => 'Contract parties must be different users.',
+            ]);
+        }
     }
 }

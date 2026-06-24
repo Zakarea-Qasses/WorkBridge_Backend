@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\JobApply;
 use App\Models\JobPost;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class JobApplyController extends Controller
@@ -86,9 +87,17 @@ class JobApplyController extends Controller
             ], 403);
         }
 
-        $application->update([
-            'status' => $data['status'],
-        ]);
+        DB::transaction(function () use ($application, $data) {
+            if ($data['status'] === 'accepted') {
+                JobApply::where('job_id', $application->job_id)
+                    ->where('id', '!=', $application->id)
+                    ->update(['status' => 'rejected']);
+            }
+
+            $application->update([
+                'status' => $data['status'],
+            ]);
+        });
 
         return response()->json([
             'message' => 'Application status updated successfully.',
