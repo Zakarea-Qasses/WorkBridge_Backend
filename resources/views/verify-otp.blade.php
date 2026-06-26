@@ -2,173 +2,283 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
     <title>تأكيد البريد الإلكتروني</title>
 
     <style>
-        body{
-            margin:0;
-            padding:0;
-            background-color:#f4f7fb;
-            font-family:Arial, Helvetica, sans-serif;
-        }
-
-        table{
-            border-spacing:0;
-        }
-
-        td{
-            padding:0;
-        }
-
-        .wrapper{
-            width:100%;
-            table-layout:fixed;
-            background-color:#f4f7fb;
-            padding:40px 0;
-        }
-
-        .main{
-            background-color:#ffffff;
-            margin:0 auto;
-            width:100%;
-            max-width:600px;
-            border-radius:14px;
-            overflow:hidden;
-        }
-
-        .header{
-            background:#0f172a;
-            padding:35px;
-            text-align:center;
-            color:white;
-        }
-
-        .header h1{
-            margin:0;
-            font-size:30px;
-        }
-
-        .content{
-            padding:40px 35px;
-            color:#333333;
-            text-align:right;
-        }
-
-        .content h2{
-            margin-top:0;
-            font-size:26px;
-            margin-bottom:20px;
-        }
-
-        .content p{
-            line-height:1.8;
-            font-size:16px;
-            color:#555555;
-        }
-
-        .otp-box{
-            text-align:center;
-            margin:35px 0;
-        }
-
-        .otp-code{
-            display:inline-block;
-            background:#eef4ff;
-            color:#2563eb;
-            font-size:36px;
-            font-weight:bold;
-            letter-spacing:8px;
-            padding:18px 30px;
-            border-radius:10px;
-            border:1px dashed #2563eb;
-            direction:ltr;
-        }
-
-        .footer{
-            background:#f1f5f9;
-            text-align:center;
-            padding:20px;
-            color:#777777;
-            font-size:14px;
-        }
-
-        @media screen and (max-width:600px){
-            .content{
-                padding:30px 20px !important;
+        @media screen and (max-width: 600px) {
+            .email-container {
+                width: 94% !important;
             }
 
-            .header{
-                padding:25px 20px !important;
+            .content {
+                padding: 30px 22px !important;
             }
 
-            .header h1{
-                font-size:24px !important;
+            .brand-name {
+                font-size: 28px !important;
             }
 
-            .content h2{
-                font-size:22px !important;
+            .title {
+                font-size: 22px !important;
             }
 
-            .content p{
-                font-size:15px !important;
-            }
-
-            .otp-code{
-                font-size:28px !important;
-                letter-spacing:5px !important;
-                padding:15px 20px !important;
+            .otp-code {
+                font-size: 29px !important;
+                letter-spacing: 6px !important;
+                padding: 16px 20px !important;
             }
         }
     </style>
 </head>
 
-<body>
-    <center class="wrapper">
-        <table class="main">
-            <tr>
-                <td class="header">
-                    <h1>WorkBridge</h1>
-                </td>
-            </tr>
+<body style="
+    margin: 0;
+    padding: 0;
+    background-color: #eef6ff;
+    font-family: Tahoma, Arial, sans-serif;
+    direction: rtl;
+">
 
-            <tr>
-                <td class="content">
-                    <h2>مرحباً {{ $userName }}</h2>
+<table role="presentation"
+       width="100%"
+       cellspacing="0"
+       cellpadding="0"
+       border="0"
+       style="background-color: #eef6ff;">
 
-                    <p>
-                        شكراً لإنشاء حسابك في منصة WorkBridge.
-                    </p>
+    <tr>
+        <td align="center" style="padding: 40px 10px;">
 
-                    <p>
-                        لتأكيد بريدك الإلكتروني، استخدم كود التحقق التالي:
-                    </p>
+            <table role="presentation"
+                   width="600"
+                   cellspacing="0"
+                   cellpadding="0"
+                   border="0"
+                   class="email-container"
+                   style="
+                       width: 100%;
+                       max-width: 600px;
+                       background-color: #ffffff;
+                       border: 1px solid #d7e8ff;
+                       border-radius: 18px;
+                       overflow: hidden;
+                       box-shadow: 0 10px 30px rgba(37, 99, 235, 0.10);
+                   ">
 
-                    <div class="otp-box">
-                        <span class="otp-code">{{ $otp }}</span>
-                    </div>
+                <!-- رأس الرسالة -->
+                <tr>
+                    <td align="center"
+                        style="
+                            padding: 34px 20px;
+                            background-color: #dcebff;
+                            border-bottom: 1px solid #c9dfff;
+                        ">
 
-                    <p>
-                        هذا الكود صالح لمدة 10 دقائق فقط.
-                    </p>
+                        <div class="brand-name"
+                             style="
+                                 color: #2457a6;
+                                 font-size: 34px;
+                                 font-weight: bold;
+                                 letter-spacing: 1px;
+                             ">
+                            WorkBridge
+                        </div>
 
-                    <p>
-                        إذا لم تقم بإنشاء هذا الحساب، يمكنك تجاهل هذه الرسالة.
-                    </p>
+                        <div style="
+                            margin-top: 8px;
+                            color: #5f7fae;
+                            font-size: 14px;
+                        ">
+                            بوابتك نحو فرص العمل المناسبة
+                        </div>
 
-                    <p>
-                        شكراً لك،<br>
-                        فريق WorkBridge
-                    </p>
-                </td>
-            </tr>
+                    </td>
+                </tr>
 
-            <tr>
-                <td class="footer">
-                    © 2026 WorkBridge - All Rights Reserved
-                </td>
-            </tr>
-        </table>
-    </center>
+                <!-- محتوى الرسالة -->
+                <tr>
+                    <td class="content"
+                        style="
+                            padding: 42px 45px 35px;
+                            text-align: right;
+                            color: #334155;
+                        ">
+
+                        <h1 class="title"
+                            style="
+                                margin: 0 0 18px;
+                                color: #2457a6;
+                                font-size: 27px;
+                                line-height: 1.5;
+                            ">
+                            تأكيد البريد الإلكتروني
+                        </h1>
+
+                        <p style="
+                            margin: 0 0 18px;
+                            color: #475569;
+                            font-size: 16px;
+                            line-height: 1.9;
+                        ">
+                            مرحباً
+                            <strong style="color: #2457a6;">
+                                {{ $userName }}
+                            </strong>
+                        </p>
+                        <p style="
+                            margin: 0 0 14px;
+                            color: #475569;
+                            font-size: 16px;
+                            line-height: 1.9;
+                        ">
+                            شكراً لإنشاء حسابك في منصة
+                            <strong style="color: #2563eb;">
+                                WorkBridge
+                            </strong>.
+                        </p>
+
+                        <p style="
+                            margin: 0 0 25px;
+                            color: #475569;
+                            font-size: 16px;
+                            line-height: 1.9;
+                        ">
+                            استخدم رمز التحقق التالي لتأكيد بريدك الإلكتروني
+                            وإكمال عملية إنشاء الحساب:
+                        </p>
+
+                        <!-- كود التحقق -->
+                        <table role="presentation"
+                               width="100%"
+                               cellspacing="0"
+                               cellpadding="0"
+                               border="0">
+
+                            <tr>
+                                <td align="center"
+                                    style="padding: 10px 0 30px;">
+
+                                    <div class="otp-code"
+                                         style="
+                                             display: inline-block;
+                                             background-color: #eef6ff;
+                                             color: #2563eb;
+                                             font-size: 38px;
+                                             font-weight: bold;
+                                             letter-spacing: 10px;
+                                             line-height: 1;
+                                             padding: 20px 30px;
+                                             border: 2px dashed #60a5fa;
+                                             border-radius: 12px;
+                                             direction: ltr;
+                                             text-align: center;
+                                         ">
+                                        {{ $otp }}
+                                    </div>
+
+                                </td>
+                            </tr>
+
+                        </table>
+
+                        <!-- التنبيه -->
+                        <table role="presentation"
+                               width="100%"
+                               cellspacing="0"
+                               cellpadding="0"
+                               border="0"
+                               style="
+                                   background-color: #f3f8ff;
+                                   border: 1px solid #d7e8ff;
+                                   border-radius: 10px;
+                               ">
+
+                            <tr>
+                                <td style="
+                                    padding: 15px 18px;
+                                    color: #49698f;
+                                    font-size: 14px;
+                                    line-height: 1.8;
+                                ">
+                                    <strong style="color: #2563eb;">
+                                        ملاحظة:
+                                    </strong>
+
+                                    رمز التحقق صالح لمدة
+
+                                    <strong style="color: #2457a6;">
+                                        10 دقائق فقط
+                                    </strong>
+
+                                    ولا يجب مشاركته مع أي شخص.
+                                </td>
+                            </tr>
+
+                        </table>
+                        <p style="
+                            margin: 25px 0 0;
+                            color: #64748b;
+                            font-size: 14px;
+                            line-height: 1.9;
+                        ">
+                            إذا لم تقم بإنشاء هذا الحساب، يمكنك تجاهل الرسالة بأمان.
+                        </p>
+
+                        <p style="
+                            margin: 25px 0 0;
+                            color: #475569;
+                            font-size: 15px;
+                            line-height: 1.9;
+                        ">
+                            مع أطيب التحيات،<br>
+
+                            <strong style="color: #2563eb;">
+                                فريق WorkBridge
+                            </strong>
+                        </p>
+
+                    </td>
+                </tr>
+
+                <!-- أسفل الرسالة -->
+                <tr>
+                    <td align="center"
+                        style="
+                            padding: 23px 20px;
+                            background-color: #f4f9ff;
+                            border-top: 1px solid #dcecff;
+                        ">
+
+                        <p style="
+                            margin: 0 0 7px;
+                            color: #4f73a5;
+                            font-size: 13px;
+                        ">
+                            هذه رسالة آلية، يرجى عدم الرد عليها.
+                        </p>
+
+                        <p style="
+                            margin: 0;
+                            color: #94a3b8;
+                            font-size: 12px;
+                            direction: ltr;
+                        ">
+                            © 2026 WorkBridge. All Rights Reserved.
+                        </p>
+
+                    </td>
+                </tr>
+
+            </table>
+
+        </td>
+    </tr>
+
+</table>
+
 </body>
 </html>
