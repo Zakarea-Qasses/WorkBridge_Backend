@@ -124,7 +124,7 @@ class ReportController extends Controller
 
         return response()->json([
             'message' => 'تم إرسال البلاغ بنجاح.',
-            'report' => $report,
+            'report' => $this->appendAdminSummaries($report->fresh(['reporter'])),
         ], 201);
     }
 
@@ -146,7 +146,7 @@ class ReportController extends Controller
             ->first();
 
         return response()->json([
-            'report' => $report,
+            'report' => $report ? $this->appendAdminSummaries($report->load('reporter')) : null,
         ]);
     }
 
@@ -155,6 +155,8 @@ class ReportController extends Controller
         $reports = Report::with('reporter')
             ->latest()
             ->get();
+
+        $reports->each(fn (Report $report) => $this->appendAdminSummaries($report));
 
         return response()->json([
             'reports' => $reports,
@@ -199,7 +201,117 @@ class ReportController extends Controller
 
         return response()->json([
             'message' => 'تم تحديث قرار الأدمن.',
-            'report' => $report,
+            'report' => $this->appendAdminSummaries($report->fresh(['reporter'])),
         ]);
+    }
+
+    private function appendAdminSummaries(Report $report): Report
+    {
+        $report->setAttribute('target_summary', $this->targetSummary($report));
+        $report->setAttribute('contract_summary', $this->contractSummary($report));
+
+        return $report;
+    }
+
+    private function targetSummary(Report $report): ?array
+    {
+        if (! $report->target_id) {
+            return null;
+        }
+
+        if ($report->target_type === 'user') {
+            $user = User::find($report->target_id);
+
+            return $user ? [
+                'id' => $user->id,
+                'type' => 'user',
+                'title' => $user->name,
+                'owner_name' => $user->name,
+                'email' => $user->email,
+                'status' => $user->status,
+            ] : null;
+        }
+
+        if ($report->target_type === 'project') {
+            $project = UserProject::with('user:id,name,email')->find($report->target_id);
+
+            return $project ? [
+                'id' => $project->id,
+                'type' => 'project',
+                'title' => $project->title,
+                'owner_name' => $project->user?->name,
+                'email' => $project->user?->email,
+                'status' => $project->status,
+                'amount' => $project->budget,
+            ] : null;
+        }
+
+        if ($report->target_type === 'service') {
+            $service = Service::with('user:id,name,email')->find($report->target_id);
+
+            return $service ? [
+                'id' => $service->id,
+                'type' => 'service',
+                'title' => $service->title,
+                'owner_name' => $service->user?->name,
+                'email' => $service->user?->email,
+                'status' => $service->status,
+                'amount' => $service->price,
+            ] : null;
+        }
+
+        if ($report->target_type === 'contract') {
+            $contract = Contract::with(['client:id,name,email', 'freelancer:id,name,email'])->find($report->target_id);
+
+            return $contract ? [
+                'id' => $contract->id,
+                'type' => 'contract',
+                'title' => 'Contract #' . $contract->id,
+                'owner_name' => $contract->client?->name,
+                'email' => $contract->client?->email,
+                'status' => $contract->status,
+                'amount' => $contract->amount,
+            ] : null;
+        }
+
+        return [
+            'id' => $report->target_id,
+            'type' => $report->target_type,
+            'title' => $report->title,
+        ];
+    }
+
+    private function contractSummary(Report $report): ?array
+    {
+        if (! $report->contract_id) {
+            return null;
+        }
+
+        $contract = Contract::with([
+            'client:id,name,email',
+            'freelancer:id,name,email',
+            'project:id,title',
+            'serviceRequest:id,title',
+            'jobPost:id,title',
+        ])->find($report->contract_id);
+
+        if (! $contract) {
+            return null;
+        }
+
+        return [
+            'id' => $contract->id,
+            'amount' => $contract->amount,
+            'commission_amount' => $contract->commission_amount,
+            'freelancer_amount' => $contract->freelancer_amount,
+            'status' => $contract->status,
+            'client_name' => $contract->client?->name,
+            'client_email' => $contract->client?->email,
+            'freelancer_name' => $contract->freelancer?->name,
+            'freelancer_email' => $contract->freelancer?->email,
+            'subject_title' => $contract->project?->title
+                ?? $contract->serviceRequest?->title
+                ?? $contract->jobPost?->title,
+        ];
     }
 }
