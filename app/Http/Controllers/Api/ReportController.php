@@ -11,6 +11,7 @@ use App\Models\UserNotification;
 use App\Models\UserProject;
 use App\Services\ContractService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ReportController extends Controller
 {
@@ -29,7 +30,9 @@ class ReportController extends Controller
             'priority' => ['nullable', 'in:low,normal,high'],
             'description' => ['required', 'string'],
             'attachments' => ['nullable', 'array'],
-            'attachments.*' => ['string', 'max:255'],
+            'attachments.*' => ['file', 'max:10240', 'mimes:jpg,jpeg,png,webp,gif,pdf,doc,docx,xls,xlsx,zip,txt'],
+            'attachment_references' => ['nullable', 'array'],
+            'attachment_references.*' => ['string', 'max:255'],
         ]);
 
         $reporter = $request->user();
@@ -103,7 +106,7 @@ class ReportController extends Controller
             'category' => $data['category'] ?? 'support',
             'priority' => $data['priority'] ?? 'normal',
             'description' => $data['description'],
-            'attachments' => $data['attachments'] ?? null,
+            'attachments' => $this->storeAttachments($request),
             'status' => 'pending',
         ]);
 
@@ -211,6 +214,39 @@ class ReportController extends Controller
         $report->setAttribute('contract_summary', $this->contractSummary($report));
 
         return $report;
+    }
+
+    private function storeAttachments(Request $request): ?array
+    {
+        $attachments = [];
+
+        foreach ($request->input('attachment_references', []) as $reference) {
+            if (! is_string($reference) || trim($reference) === '') {
+                continue;
+            }
+
+            $attachments[] = [
+                'type' => 'reference',
+                'name' => trim($reference),
+                'path' => trim($reference),
+                'url' => trim($reference),
+            ];
+        }
+
+        foreach ($request->file('attachments', []) as $file) {
+            $path = $file->store('reports', 'public');
+
+            $attachments[] = [
+                'type' => 'file',
+                'name' => $file->getClientOriginalName(),
+                'path' => $path,
+                'url' => Storage::disk('public')->url($path),
+                'mime_type' => $file->getClientMimeType(),
+                'size' => $file->getSize(),
+            ];
+        }
+
+        return $attachments ?: null;
     }
 
     private function targetSummary(Report $report): ?array
