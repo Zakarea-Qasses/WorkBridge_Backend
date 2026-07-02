@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\JobPost;
+use App\Models\UserNotification;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -109,6 +110,13 @@ class JobPostController extends Controller
             'status' => 'active',
         ]);
 
+        UserNotification::create([
+            'user_id' => $user->id,
+            'type' => 'job_created',
+            'title' => 'تم نشر الوظيفة',
+            'message' => 'تم نشر الوظيفة بنجاح: ' . $job->title,
+        ]);
+
         return response()->json([
             'message' => 'تم إنشاء الوظيفة بنجاح',
             'job' => $job->load(['company', 'city'])
@@ -137,6 +145,13 @@ class JobPostController extends Controller
 
         $job->update($data);
 
+        UserNotification::create([
+            'user_id' => $request->user()->id,
+            'type' => 'job_updated',
+            'title' => 'تم تعديل الوظيفة',
+            'message' => 'تم تعديل الوظيفة بنجاح: ' . $job->title,
+        ]);
+
         return response()->json([
             'message' => 'تم تحديث الوظيفة بنجاح',
             'job' => $job->load(['company', 'city'])
@@ -156,6 +171,13 @@ class JobPostController extends Controller
 
         $job->update([
             'status' => 'paused'
+        ]);
+
+        UserNotification::create([
+            'user_id' => $request->user()->id,
+            'type' => 'job_paused',
+            'title' => 'تم إيقاف الوظيفة',
+            'message' => 'تم إيقاف الوظيفة: ' . $job->title,
         ]);
 
         return response()->json([
@@ -179,6 +201,13 @@ class JobPostController extends Controller
             'status' => 'active'
         ]);
 
+        UserNotification::create([
+            'user_id' => $request->user()->id,
+            'type' => 'job_activated',
+            'title' => 'تم تفعيل الوظيفة',
+            'message' => 'تم تفعيل الوظيفة: ' . $job->title,
+        ]);
+
         return response()->json([
             'message' => 'تم تفعيل الوظيفة بنجاح',
             'job' => $job
@@ -195,6 +224,13 @@ class JobPostController extends Controller
                 'message' => 'لا يمكنك حذف وظيفة لا تملكها'
             ], 403);
         }
+
+        UserNotification::create([
+            'user_id' => $request->user()->id,
+            'type' => 'job_deleted',
+            'title' => 'تم حذف الوظيفة',
+            'message' => 'تم حذف الوظيفة: ' . $job->title,
+        ]);
 
         $job->delete();
 

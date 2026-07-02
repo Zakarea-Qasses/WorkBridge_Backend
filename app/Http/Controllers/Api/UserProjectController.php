@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\City;
-use App\Models\Project;
+use App\Models\UserNotification;
 use App\Models\UserProject;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -89,12 +89,12 @@ class UserProjectController extends Controller
             'governorate_id' => ['nullable', 'exists:governorates,id'],
             'city_id' => ['nullable', 'exists:cities,id'],
 
-            'skills' => ['required', 'array'],
+            'skills' => ['nullable', 'array'],
             'skills.*' => ['exists:skills,id'],
         ]);
 
         if (! empty($data['governorate_id']) && ! empty($data['city_id'])) {
-            $cityBelongsToGovernorate = City::where('id', $cityId)
+            $cityBelongsToGovernorate = City::where('id', $data['city_id'])
                 ->where('governorate_id', $data['governorate_id'])
                 ->exists();
 
@@ -117,7 +117,14 @@ class UserProjectController extends Controller
             'status' => 'active',
         ]);
 
-        $project->skills()->sync($data['skills']);
+        $project->skills()->sync($data['skills'] ?? []);
+
+        UserNotification::create([
+            'user_id' => $user->id,
+            'type' => 'project_created',
+            'title' => 'تم نشر مشروعك',
+            'message' => 'تم نشر مشروعك بنجاح: ' . $project->title,
+        ]);
 
         return response()->json([
             'message' => 'تم نشر المشروع بنجاح',
@@ -151,7 +158,7 @@ class UserProjectController extends Controller
             'governorate_id' => ['nullable', 'exists:governorates,id'],
             'city_id' => ['nullable', 'exists:cities,id'],
 
-            'skills' => ['sometimes', 'array'],
+            'skills' => ['nullable', 'array'],
             'skills.*' => ['exists:skills,id'],
         ]);
 
@@ -159,7 +166,7 @@ class UserProjectController extends Controller
         $cityId = $data['city_id'] ?? $project->city_id;
 
         if (! empty($governorateId) && ! empty($cityId)) {
-            $cityBelongsToGovernorate = City::where('id', $data['city_id'])
+            $cityBelongsToGovernorate = City::where('id', $cityId)
                 ->where('governorate_id', $governorateId)
                 ->exists();
 
@@ -170,11 +177,21 @@ class UserProjectController extends Controller
             }
         }
 
-        $project->update($data);
+        $projectData = $data;
+        unset($projectData['skills']);
 
-        if (isset($data['skills'])) {
-            $project->skills()->sync($data['skills']);
+        $project->update($projectData);
+
+        if (array_key_exists('skills', $data)) {
+            $project->skills()->sync($data['skills'] ?? []);
         }
+
+        UserNotification::create([
+            'user_id' => $user->id,
+            'type' => 'project_updated',
+            'title' => 'تم تعديل مشروعك',
+            'message' => 'تم تعديل مشروعك بنجاح: ' . $project->title,
+        ]);
 
         return response()->json([
             'message' => 'تم تعديل المشروع بنجاح',
@@ -197,6 +214,13 @@ class UserProjectController extends Controller
                 'message' => 'لا يمكنك حذف مشروع لا تملكه'
             ], 403);
         }
+
+        UserNotification::create([
+            'user_id' => $user->id,
+            'type' => 'project_deleted',
+            'title' => 'تم حذف مشروعك',
+            'message' => 'تم حذف مشروعك: ' . $project->title,
+        ]);
 
         $project->delete();
 
