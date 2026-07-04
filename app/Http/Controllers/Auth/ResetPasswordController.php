@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -15,33 +16,32 @@ class ResetPasswordController extends Controller
         $data = $request->validate([
             'token' => ['required', 'string'],
             'email' => ['required', 'email'],
-            'password' => ['required', 'min:8', 'confirmed'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
-        $rateKey = 'reset-password:' . $request->ip() . ':' . strtolower($data['email']);
+        $email = strtolower($data['email']);
+        $rateKey = 'reset-password:' . $request->ip() . ':' . $email;
 
         if (RateLimiter::tooManyAttempts($rateKey, 5)) {
             return response()->json([
-                'message' => 'تم تجاوز عدد المحاولات، يرجى المحاولة لاحقاً'
+                'message' => 'Too many reset attempts. Please try again later.',
             ], 429);
         }
 
         $status = Password::reset(
             [
-                'email' => $data['email'],
+                'email' => $email,
                 'password' => $data['password'],
                 'password_confirmation' => $request->password_confirmation,
                 'token' => $data['token'],
             ],
-            function ($user, $password) {
+            function ($user, string $password) {
                 $user->forceFill([
-                    'password' => $password,
+                    'password' => Hash::make($password),
                     'remember_token' => Str::random(60),
-                ]);
+                ])->save();
 
                 $user->tokens()->delete();
-
-                $user->save();
             }
         );
 
@@ -49,14 +49,18 @@ class ResetPasswordController extends Controller
             RateLimiter::clear($rateKey);
 
             return response()->json([
-                'message' => 'تم إعادة تعيين كلمة المرور بنجاح'
-            ], 200);
+                'message' => 'Password reset successfully.',
+            ]);
         }
 
-        RateLimiter::hit($rateKey, 600); // زيادة عدد المحاولات الفاشلة
+        RateLimiter::hit($rateKey, 600);
+
+        $message = $status === Password::INVALID_USER
+            ? 'No account was found for this email address.'
+            : 'The reset token is invalid or has expired.';
 
         return response()->json([
-            'message' => 'رابط إعادة التعيين غير صحيح أو منتهي الصلاحية'
+            'message' => $message,
         ], 400);
     }
 }
