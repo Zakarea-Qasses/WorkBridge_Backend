@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\JobPost;
 use App\Models\Service;
+use App\Models\UserNotification;
 use App\Models\UserProject;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -92,6 +93,13 @@ class AdminContentController extends Controller
         $project = UserProject::findOrFail($id);
         $project->update(['status' => $data['status']]);
 
+        UserNotification::create([
+            'user_id' => $project->user_id,
+            'type' => 'project_status_updated',
+            'title' => 'تم تحديث حالة مشروعك',
+            'message' => 'تم تغيير حالة مشروعك "' . $project->title . '" إلى: ' . $data['status'],
+        ]);
+
         return response()->json([
             'message' => 'تم تحديث حالة المشروع بنجاح.',
             'project' => $project->load(['user:id,name,email', 'category:id,name', 'governorate:id,name', 'city:id,name,governorate_id', 'skills:id,name']),
@@ -107,6 +115,13 @@ class AdminContentController extends Controller
         $service = Service::findOrFail($id);
         $service->update(['status' => $data['status']]);
 
+        UserNotification::create([
+            'user_id' => $service->user_id,
+            'type' => 'service_status_updated',
+            'title' => 'تم تحديث حالة خدمتك',
+            'message' => 'تم تغيير حالة خدمتك "' . $service->title . '" إلى: ' . $data['status'],
+        ]);
+
         return response()->json([
             'message' => 'تم تحديث حالة الخدمة بنجاح.',
             'service' => $service->load(['user:id,name,email', 'category:id,name']),
@@ -119,8 +134,17 @@ class AdminContentController extends Controller
             'status' => ['required', Rule::in(['active', 'paused', 'closed'])],
         ]);
 
-        $job = JobPost::findOrFail($id);
+        $job = JobPost::with('company')->findOrFail($id);
         $job->update(['status' => $data['status']]);
+
+        if ($job->company) {
+            UserNotification::create([
+                'user_id' => $job->company->user_id,
+                'type' => 'job_status_updated',
+                'title' => 'تم تحديث حالة الوظيفة',
+                'message' => 'تم تغيير حالة الوظيفة "' . $job->title . '" إلى: ' . $data['status'],
+            ]);
+        }
 
         return response()->json([
             'message' => 'تم تحديث حالة الوظيفة بنجاح.',
@@ -130,21 +154,50 @@ class AdminContentController extends Controller
 
     public function destroyProject(int $id)
     {
-        UserProject::findOrFail($id)->delete();
+        $project = UserProject::findOrFail($id);
+
+        UserNotification::create([
+            'user_id' => $project->user_id,
+            'type' => 'project_deleted_by_admin',
+            'title' => 'تم حذف مشروعك',
+            'message' => 'تم حذف مشروعك من قبل الإدارة: ' . $project->title,
+        ]);
+
+        $project->delete();
 
         return response()->json(['message' => 'تم حذف المشروع بنجاح.']);
     }
 
     public function destroyService(int $id)
     {
-        Service::findOrFail($id)->delete();
+        $service = Service::findOrFail($id);
+
+        UserNotification::create([
+            'user_id' => $service->user_id,
+            'type' => 'service_deleted_by_admin',
+            'title' => 'تم حذف خدمتك',
+            'message' => 'تم حذف خدمتك من قبل الإدارة: ' . $service->title,
+        ]);
+
+        $service->delete();
 
         return response()->json(['message' => 'تم حذف الخدمة بنجاح.']);
     }
 
     public function destroyJob(int $id)
     {
-        JobPost::findOrFail($id)->delete();
+        $job = JobPost::with('company')->findOrFail($id);
+
+        if ($job->company) {
+            UserNotification::create([
+                'user_id' => $job->company->user_id,
+                'type' => 'job_deleted_by_admin',
+                'title' => 'تم حذف الوظيفة',
+                'message' => 'تم حذف الوظيفة من قبل الإدارة: ' . $job->title,
+            ]);
+        }
+
+        $job->delete();
 
         return response()->json(['message' => 'تم حذف الوظيفة بنجاح.']);
     }

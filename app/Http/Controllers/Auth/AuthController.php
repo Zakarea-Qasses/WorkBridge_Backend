@@ -15,9 +15,7 @@ use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
 {
-    /**
-     * تسجيل مستخدم جديد
-     */
+   
     public function register(Request $request)
     {
         $rateKey = 'register:' . $request->ip();
@@ -73,7 +71,6 @@ class AuthController extends Controller
             ], 500);
         }
 
-        // إشعار الأدمن بحساب جديد
         if ($user->role === 'company') {
             $admins = User::where('role', 'admin')->get();
             foreach ($admins as $admin) {
@@ -94,9 +91,7 @@ class AuthController extends Controller
         ], 201);
     }
 
-    /**
-     * تسجيل الدخول
-     */
+    
     public function login(Request $request)
     {
         $rateKey = 'login:' . $request->ip();
@@ -158,9 +153,6 @@ class AuthController extends Controller
         ], 200);
     }
 
-    /**
-     * تأكيد البريد الإلكتروني باستخدام OTP
-     */
     public function verify(Request $request)
     {
         $data = $request->validate([
@@ -195,9 +187,6 @@ class AuthController extends Controller
         return response()->json(['message' => 'تم تأكيد البريد الإلكتروني بنجاح'], 200);
     }
 
-    /**
-     * إعادة إرسال OTP
-     */
     public function resend(Request $request)
     {
         $request->validate(['email' => ['required', 'email']]);
@@ -237,9 +226,6 @@ class AuthController extends Controller
         return response()->json(['message' => 'تم إرسال كود تحقق جديد'], 200);
     }
 
-    /**
-     * تسجيل الخروج
-     */
     public function logout(Request $request)
     {
         try {

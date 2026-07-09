@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Review;
 use App\Models\Service;
+use App\Models\UserNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
@@ -132,6 +133,13 @@ class ServiceController extends Controller
             'status' => 'active',
         ]);
 
+        UserNotification::create([
+            'user_id' => $user->id,
+            'type' => 'service_created',
+            'title' => 'تم نشر خدمتك',
+            'message' => 'تم نشر خدمتك بنجاح: ' . $service->title,
+        ]);
+
         return response()->json([
             'message' => 'تم نشر الخدمة بنجاح',
             'service' => $service
@@ -159,6 +167,13 @@ class ServiceController extends Controller
 
         $service->update($data);
 
+        UserNotification::create([
+            'user_id' => $user->id,
+            'type' => 'service_updated',
+            'title' => 'تم تعديل خدمتك',
+            'message' => 'تم تعديل خدمتك بنجاح: ' . $service->title,
+        ]);
+
         return response()->json([
             'message' => 'تم تعديل الخدمة بنجاح',
             'service' => $service
@@ -175,6 +190,13 @@ class ServiceController extends Controller
                 'message' => 'لا يمكنك حذف خدمة لا تملكها'
             ], 403);
         }
+
+        UserNotification::create([
+            'user_id' => $user->id,
+            'type' => 'service_deleted',
+            'title' => 'تم حذف خدمتك',
+            'message' => 'تم حذف خدمتك: ' . $service->title,
+        ]);
 
         $service->delete();
 

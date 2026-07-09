@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\JobApply;
 use App\Models\JobPost;
+use App\Models\UserNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -21,7 +22,7 @@ class JobApplyController extends Controller
             ], 403);
         }
 
-        $job = JobPost::findOrFail($jobId);
+        $job = JobPost::with('company')->findOrFail($jobId);
 
         if ($job->status !== 'active') {
             return response()->json([
@@ -44,6 +45,15 @@ class JobApplyController extends Controller
             'user_id' => $user->id,
             'status' => 'pending',
         ]);
+
+        if ($job->company) {
+            UserNotification::create([
+                'user_id' => $job->company->user_id,
+                'type' => 'job_application',
+                'title' => 'وصل طلب توظيف جديد',
+                'message' => $user->name . ' تقدم على الوظيفة: ' . $job->title,
+            ]);
+        }
 
         return response()->json([
             'message' => 'Job application sent successfully.',
@@ -87,8 +97,16 @@ class JobApplyController extends Controller
             ], 403);
         }
 
-        DB::transaction(function () use ($application, $data) {
+        $rejectedApplications = collect();
+
+        DB::transaction(function () use ($application, $data, &$rejectedApplications) {
             if ($data['status'] === 'accepted') {
+                $rejectedApplications = JobApply::with('user:id,name,email')
+                    ->where('job_id', $application->job_id)
+                    ->where('id', '!=', $application->id)
+                    ->where('status', '!=', 'rejected')
+                    ->get();
+
                 JobApply::where('job_id', $application->job_id)
                     ->where('id', '!=', $application->id)
                     ->update(['status' => 'rejected']);
@@ -98,6 +116,29 @@ class JobApplyController extends Controller
                 'status' => $data['status'],
             ]);
         });
+
+        $notificationType = $data['status'] === 'accepted' ? 'job_application_accepted' : 'job_application_' . $data['status'];
+        $notificationTitle = match ($data['status']) {
+            'accepted' => 'تم قبول طلبك الوظيفي',
+            'rejected' => 'تم رفض طلبك الوظيفي',
+            default => 'تم تحديث حالة طلبك الوظيفي',
+        };
+
+        UserNotification::create([
+            'user_id' => $application->user_id,
+            'type' => $notificationType,
+            'title' => $notificationTitle,
+            'message' => 'تم تحديث حالة طلبك على الوظيفة "' . $application->job->title . '" إلى: ' . $data['status'],
+        ]);
+
+        foreach ($rejectedApplications as $rejectedApplication) {
+            UserNotification::create([
+                'user_id' => $rejectedApplication->user_id,
+                'type' => 'job_application_rejected',
+                'title' => 'تم رفض طلبك الوظيفي',
+                'message' => 'تم رفض طلبك على الوظيفة: ' . $application->job->title,
+            ]);
+        }
 
         return response()->json([
             'message' => 'Application status updated successfully.',
