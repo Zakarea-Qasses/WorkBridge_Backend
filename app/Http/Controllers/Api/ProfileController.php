@@ -6,10 +6,40 @@ use App\Http\Controllers\Controller;
 use App\Models\City;
 use App\Models\Review;
 use App\Models\Skill;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class ProfileController extends Controller
 {
+    public function publicShow($userId)
+    {
+        $user = User::where('role', 'personal')
+            ->whereNotIn('status', ['blocked', 'inactive', 'unactive'])
+            ->with(['profile.skills', 'profile.governorate', 'profile.city'])
+            ->findOrFail($userId);
+
+        if (! $user->profile) {
+            return response()->json([
+                'message' => 'لم نجد الملف الشخصي المطلوب',
+            ], 404);
+        }
+
+        $reviewsQuery = Review::with('reviewer:id,name')
+            ->where('reviewed_user_id', $user->id)
+            ->whereHas('contract', fn ($query) => $query->where('freelancer_id', $user->id))
+            ->latest();
+
+        $profile = $user->profile;
+        $profile->setAttribute('name', $profile->name ?: $user->name);
+
+        return response()->json([
+            'profile' => $profile,
+            'rating_avg' => (float) $profile->rating_avg,
+            'reviews_count' => (clone $reviewsQuery)->count(),
+            'reviews' => $reviewsQuery->limit(10)->get(),
+        ], 200);
+    }
+
     public function show(Request $request)
     {
         $user = $request->user();

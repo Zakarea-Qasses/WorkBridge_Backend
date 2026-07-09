@@ -3,15 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Application;
 use App\Models\Company;
 use App\Models\Contract;
+use App\Models\JobApply;
 use App\Models\JobPost;
 use App\Models\Report;
 use App\Models\Review;
 use App\Models\Service;
+use App\Models\ServiceRequest;
 use App\Models\User;
 use App\Models\UserProject;
 use App\Models\Wallet;
+use App\Models\WalletRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -34,15 +38,28 @@ class DashboardController extends Controller
             'stats' => [
                 'total_projects' => UserProject::where('user_id', $user->id)->count(),
                 'active_projects' => UserProject::where('user_id', $user->id)->where('status', 'active')->count(),
+                'total_services' => Service::where('user_id', $user->id)->count(),
+                'active_services' => Service::where('user_id', $user->id)->where('status', 'active')->count(),
+                'project_applications_sent' => Application::where('user_id', $user->id)->count(),
+                'project_applications_received' => Application::whereHas('project', fn ($query) => $query->where('user_id', $user->id))->count(),
+                'job_applications_sent' => JobApply::where('user_id', $user->id)->count(),
+                'service_requests_sent' => ServiceRequest::where('client_id', $user->id)->count(),
+                'service_requests_received' => ServiceRequest::whereHas('service', fn ($query) => $query->where('user_id', $user->id))->count(),
                 'active_contracts' => Contract::where(function ($query) use ($user) {
                     $query->where('client_id', $user->id)
                         ->orWhere('freelancer_id', $user->id);
                 })->whereIn('status', ['funded', 'in_progress'])->count(),
+                'completed_contracts' => Contract::where(function ($query) use ($user) {
+                    $query->where('client_id', $user->id)
+                        ->orWhere('freelancer_id', $user->id);
+                })->where('status', 'completed')->count(),
+                'pending_wallet_requests' => WalletRequest::where('user_id', $user->id)->where('status', 'pending')->count(),
                 'wallet_balance' => (float) optional($user->wallet)->balance,
                 'rating_avg' => round((float) Review::where('reviewed_user_id', $user->id)->avg('rating'), 2),
             ],
             'recent_projects' => $this->personalRecentProjects($user->id),
             'active_contracts' => $this->personalActiveContracts($user->id),
+            'recent_activity' => $this->personalRecentActivity($user->id),
             'quick_actions' => [
                 ['key' => 'create_project', 'label' => 'Create project'],
                 ['key' => 'create_service', 'label' => 'Create service'],
@@ -150,6 +167,60 @@ class DashboardController extends Controller
                 'freelancer_name' => $contract->freelancer?->name,
                 'created_at' => $contract->created_at,
             ]);
+    }
+
+    private function personalRecentActivity(int $userId)
+    {
+        $projectApplications = Application::with('project:id,title')
+            ->where('user_id', $userId)
+            ->latest()
+            ->take(4)
+            ->get()
+            ->toBase()
+            ->map(fn ($application) => [
+                'id' => 'project_application_' . $application->id,
+                'type' => 'project_application',
+                'title' => $application->project?->title ?? 'Project application',
+                'status' => $application->status,
+                'amount' => (float) $application->price,
+                'created_at' => $application->created_at,
+            ]);
+
+        $serviceRequests = ServiceRequest::with('service:id,title')
+            ->where('client_id', $userId)
+            ->latest()
+            ->take(4)
+            ->get()
+            ->toBase()
+            ->map(fn ($request) => [
+                'id' => 'service_request_' . $request->id,
+                'type' => 'service_request',
+                'title' => $request->service?->title ?? $request->title,
+                'status' => $request->status,
+                'amount' => null,
+                'created_at' => $request->created_at,
+            ]);
+
+        $walletRequests = WalletRequest::where('user_id', $userId)
+            ->latest()
+            ->take(4)
+            ->get()
+            ->toBase()
+            ->map(fn ($request) => [
+                'id' => 'wallet_request_' . $request->id,
+                'type' => 'wallet_request_' . $request->type,
+                'title' => $request->type === 'deposit' ? 'Deposit request' : 'Withdrawal request',
+                'status' => $request->status,
+                'amount' => (float) $request->amount,
+                'created_at' => $request->created_at,
+            ]);
+
+        return $projectApplications
+            ->merge($serviceRequests)
+            ->merge($walletRequests)
+            ->sortByDesc('created_at')
+            ->take(8)
+            ->values();
     }
 
     private function companyVerificationRequests()

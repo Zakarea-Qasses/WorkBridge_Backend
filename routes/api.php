@@ -110,8 +110,9 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 // |----Wallet---|
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/wallet', [WalletController::class, 'myWallet']);
-    Route::post('/wallet/deposit', [WalletController::class, 'deposit']);
-    Route::post('/wallet/withdraw', [WalletController::class, 'withdraw']);
+    Route::get('/wallet/requests', [WalletController::class, 'myRequests']);
+    Route::post('/wallet/deposit-requests', [WalletController::class, 'requestDeposit']);
+    Route::post('/wallet/withdraw-requests', [WalletController::class, 'requestWithdraw']);
     Route::post('/wallet/transfer-to-admin', [WalletController::class, 'transferToAdmin']);
 });
 
@@ -131,6 +132,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
 });
 Route::get('/users/{userId}/reviews', [ReviewController::class, 'userReviews']);
+Route::get('/users/{userId}/profile', [ProfileController::class, 'publicShow']);
 
 
 // |----Notifications---|
@@ -230,6 +232,9 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/users', [AdminUserController::class, 'index']);
     Route::get('/wallets', [WalletController::class, 'allWallets']);
+    Route::get('/wallet-requests', [WalletController::class, 'adminWalletRequests']);
+    Route::post('/wallet-requests/{walletRequest}/approve', [WalletController::class, 'approveWalletRequest']);
+    Route::post('/wallet-requests/{walletRequest}/reject', [WalletController::class, 'rejectWalletRequest']);
     Route::get('/transactions', [WalletController::class, 'adminTransactions']);
     Route::get('/escrow/transactions', [WalletController::class, 'escrowTransactions']);
     Route::get('/earnings', [WalletController::class, 'adminEarnings']);
