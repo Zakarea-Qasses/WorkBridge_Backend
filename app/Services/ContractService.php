@@ -7,6 +7,7 @@ use App\Models\Contract;
 use App\Models\JobPost;
 use App\Models\ServiceRequest;
 use App\Models\User;
+use App\Models\UserNotification;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\DB;
@@ -119,7 +120,7 @@ class ContractService
                 'status' => 'funded',
                 'funded_at' => now(),
             ]);
-
+           
             return $contract->fresh();
         });
     }
@@ -158,6 +159,19 @@ class ContractService
             $contract->update(['status' => 'canceled']);
             return $contract->fresh();
         }
+
+        if($contract->serviceRequest){
+            $contract->serviceRequest->update([
+                'status'=>'rejected'
+            ]);
+        }
+
+         if($contract->application){
+            $contract->application->update([
+                'status'=>'rejeted'
+            ]);
+         }
+            
 
         return $this->refundClient($contract, 'canceled');
     }

@@ -52,7 +52,7 @@ class AuthController extends Controller
             'is_active'=>true,
         ]);
 
-        $otp = rand(100000, 999999);
+        $otp = random_int(100000, 999999);
         EmailVerificationOtp::updateOrCreate(
             ['user_id' => $user->id],
             [
@@ -205,7 +205,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'يرجى الانتظار دقيقة قبل طلب كود جديد'], 429);
         }
 
-        $otp = rand(100000, 999999);
+        $otp = random_int(100000, 999999);
         EmailVerificationOtp::updateOrCreate(
             ['user_id' => $user->id],
             [

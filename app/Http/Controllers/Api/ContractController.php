@@ -7,6 +7,7 @@ use App\Models\Contract;
 use App\Models\JobApply;
 use App\Models\JobPost;
 use App\Models\User;
+use App\Models\UserNotification;
 use App\Services\ContractService;
 use Illuminate\Http\Request;
 
@@ -69,7 +70,7 @@ class ContractController extends Controller
         ]);
     }
 
-    public function createCompanyJobContract(Request $request, int $jobId)
+    /*public function createCompanyJobContract(Request $request, int $jobId)
     {
         if ($request->user()->role !== 'company') {
             return response()->json(['message' => 'فقط حسابات الشركات يمكنها إنشاء عقود الوظائف'], 403);
@@ -106,7 +107,7 @@ class ContractController extends Controller
             'contract' => $contract->load(['client:id,name,email', 'freelancer:id,name,email', 'jobPost:id,title']),
         ], 201);
     }
-
+*/
     public function start(Request $request, int $id)
     {
         $contract = Contract::findOrFail($id);
@@ -116,6 +117,12 @@ class ContractController extends Controller
         }
 
         $contract = $this->contractService->fund($contract);
+         UserNotification::create([
+                'user_id' => $contract->freelancer_id,
+                'type' => 'contract_fund',
+                'title' => 'تم تمويل العقد',
+                'message' => 'تم تمويل العقد من قبل الطرف الاخر, يمكنك البدء',
+            ]);
 
         return response()->json([
             'message' => 'تم بدء العقد وحجز المبلغ بنجاح.',
@@ -149,6 +156,20 @@ class ContractController extends Controller
 
         $contract = $this->contractService->cancel($contract);
 
+         UserNotification::create([
+                'user_id' => $contract->freelancer_id,
+                'type' => 'contract_canceled',
+                'title' => 'تم الغاء العقد',
+                 'message' => 'تم الغاء العقد ورد المستحقات',
+            ]);
+
+            UserNotification::create([
+                'user_id' => $contract->client_id,
+                'type' => 'contract_canceled',
+                'title' => 'تم الغاء العقد',
+                'message' => 'تم الغاء العقد ورد المستحقات',
+            ]);
+         
         return response()->json([
             'message' => 'تم إلغاء العقد بنجاح.',
             'contract' => $contract,
