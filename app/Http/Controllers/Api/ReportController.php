@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Contract;
+use App\Models\JobPost;
 use App\Models\Report;
 use App\Models\Service;
 use App\Models\User;
@@ -22,7 +23,7 @@ class ReportController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'target_type' => ['nullable', 'in:user,project,service,contract,general'],
+            'target_type' => ['nullable', 'in:user,project,service,job,contract,general'],
             'target_id' => ['nullable', 'integer'],
             'contract_id' => ['nullable', 'exists:contracts,id'],
             'title' => ['nullable', 'string', 'max:255'],
@@ -71,6 +72,16 @@ class ReportController extends Controller
             if ($target->user_id === $reporter->id) {
                 return response()->json([
                     'message' => 'لا يمكنك الإبلاغ عن خدمتك.',
+                ], 422);
+            }
+        }
+
+        if ($data['target_type'] === 'job') {
+            $target = JobPost::with('company')->findOrFail($data['target_id']);
+
+            if ($target->company?->user_id === $reporter->id) {
+                return response()->json([
+                    'message' => 'لا يمكنك الإبلاغ عن وظيفتك.',
                 ], 422);
             }
         }
@@ -293,6 +304,20 @@ class ReportController extends Controller
                 'email' => $service->user?->email,
                 'status' => $service->status,
                 'amount' => $service->price,
+            ] : null;
+        }
+
+        if ($report->target_type === 'job') {
+            $job = JobPost::with('company.user:id,name,email')->find($report->target_id);
+
+            return $job ? [
+                'id' => $job->id,
+                'type' => 'job',
+                'title' => $job->title,
+                'owner_name' => $job->company?->company_name,
+                'email' => $job->company?->user?->email,
+                'status' => $job->status,
+                'amount' => $job->salary,
             ] : null;
         }
 
