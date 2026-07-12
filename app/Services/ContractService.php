@@ -229,6 +229,19 @@ class ContractService
         return $contract->fresh();
     }
 
+    public function resumeAfterRejectedDispute(Contract $contract): Contract
+    {
+        if ($contract->status !== 'dispute') {
+            throw ValidationException::withMessages([
+                'contract' => 'يمكن استئناف العقود المتنازع عليها فقط.',
+            ]);
+        }
+
+        $contract->update(['status' => 'in_progress']);
+
+        return $contract->fresh();
+    }
+
     private function releasePayment(Contract $contract): Contract
     {
         return DB::transaction(function () use ($contract) {

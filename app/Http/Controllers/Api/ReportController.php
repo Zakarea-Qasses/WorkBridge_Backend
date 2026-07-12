@@ -136,6 +136,19 @@ class ReportController extends Controller
             ]);
         }
 
+        if ($report->contract) {
+            $otherPartyId = $reporter->id === $report->contract->client_id
+                ? $report->contract->freelancer_id
+                : $report->contract->client_id;
+
+            UserNotification::create([
+                'user_id' => $otherPartyId,
+                'type' => 'contract_dispute_opened',
+                'title' => 'تم فتح نزاع على العقد',
+                'message' => 'تم فتح نزاع على العقد رقم ' . $report->contract_id . ' وإرساله إلى الإدارة للمراجعة.',
+            ]);
+        }
+
         return response()->json([
             'message' => 'تم إرسال البلاغ بنجاح.',
             'report' => $this->appendAdminSummaries($report->fresh(['reporter'])),
@@ -187,6 +200,15 @@ class ReportController extends Controller
 
         $report = Report::findOrFail($id);
 
+        if ($report->contract && $data['status'] === 'accepted' && empty($data['admin_action'])) {
+            return response()->json([
+                'message' => 'يجب اختيار الإجراء المالي عند قبول نزاع مرتبط بعقد.',
+                'errors' => [
+                    'admin_action' => ['اختر إعادة المبلغ للعميل أو تحريره لمقدم الخدمة.'],
+                ],
+            ], 422);
+        }
+
         $report->update([
             'status' => $data['status'],
             'admin_decision' => $data['admin_decision'] ?? null,
@@ -202,6 +224,10 @@ class ReportController extends Controller
             }
         }
 
+        if ($report->contract && $data['status'] === 'rejected') {
+            $this->contractService->resumeAfterRejectedDispute($report->contract);
+        }
+
         UserNotification::create([
             'user_id' => $report->reporter_id,
             'type' => 'report_decision',
@@ -212,6 +238,19 @@ class ReportController extends Controller
                 ? 'تم قبول البلاغ الذي أرسلته.'
                 : 'تم رفض البلاغ الذي أرسلته.',
         ]);
+
+        if ($report->contract) {
+            $otherPartyId = $report->reporter_id === $report->contract->client_id
+                ? $report->contract->freelancer_id
+                : $report->contract->client_id;
+
+            UserNotification::create([
+                'user_id' => $otherPartyId,
+                'type' => 'contract_dispute_decision',
+                'title' => 'صدر قرار الإدارة في نزاع العقد',
+                'message' => 'صدر قرار الإدارة في النزاع المرتبط بالعقد رقم ' . $report->contract_id . '.',
+            ]);
+        }
 
         return response()->json([
             'message' => 'تم تحديث قرار الأدمن.',
