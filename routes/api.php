@@ -176,6 +176,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 //Project Routes
 Route::get('/projects', [UserProjectController::class, 'index']);
+Route::get('/projects/mine', [UserProjectController::class, 'mine'])->middleware('auth:sanctum');
 Route::get('/projects/{id}', [UserProjectController::class, 'show']);
 
 Route::middleware('auth:sanctum')->group(function () {
