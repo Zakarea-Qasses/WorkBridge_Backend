@@ -166,7 +166,7 @@ Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/services', [ServiceController::class, 'index']);
 Route::get('/services/{id}', [ServiceController::class, 'show']);
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth:sanctum','verified')->group(function () {
     Route::post('/services', [ServiceController::class, 'store']);
     Route::put('/services/{id}', [ServiceController::class, 'update']);
     Route::delete('/services/{id}', [ServiceController::class, 'destroy']);

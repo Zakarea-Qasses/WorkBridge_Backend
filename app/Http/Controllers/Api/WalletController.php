@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Models\UserNotification;
 use Illuminate\Http\Request;
 use App\Models\Wallet;
 use App\Models\WalletRequest;
@@ -105,6 +107,16 @@ class WalletController extends Controller
             'payment_note' => $data['payment_note'] ?? null,
             'deposit_receipt_path' => $receiptPath,
         ]);
+        
+        $admins = User::where('role', 'admin')->get();
+            foreach ($admins as $admin) {
+        UserNotification::create([
+            'user_id' => $admin->id,
+            'type' => 'wallet_request',
+            'title' => 'طلب شحن جديد',
+            'message' => 'تم طلب شحن محفظة'.' '.$request->user()->name,
+        ]);
+        }
 
         return response()->json([
             'status' => true,
@@ -138,6 +150,16 @@ class WalletController extends Controller
             'status' => 'pending',
             'withdrawal_details' => $data['withdrawal_details'],
         ]);
+        
+        $admins = User::where('role', 'admin')->get();
+            foreach ($admins as $admin) {
+        UserNotification::create([
+            'user_id' => $admin->id,
+            'type' => 'wallet_request',
+            'title' => 'طلب سحب جديد',
+            'message' => 'تم طلب سحب محفظة'.' '.$request->user()->name,
+        ]);
+        }
 
         return response()->json([
             'status' => true,
@@ -272,6 +294,13 @@ class WalletController extends Controller
             'reviewed_at' => now(),
         ]);
 
+        UserNotification::create([
+            'user_id' => $walletRequest->user_id,
+            'type' => 'job_paused',
+            'title' => 'قبول طلب المحفظة',
+            'message' => 'تم قبول طلب المحفظة بنجاح.',
+        ]);
+
         return response()->json([
             'status' => true,
             'message' => 'تم قبول طلب المحفظة بنجاح.',
@@ -297,6 +326,13 @@ class WalletController extends Controller
             'admin_note' => $data['admin_note'] ?? null,
             'reviewed_by' => $request->user()->id,
             'reviewed_at' => now(),
+        ]);
+        
+        UserNotification::create([
+            'user_id' => $walletRequest->user_id,
+            'type' => 'job_paused',
+            'title' => 'رفض طلب المحفظة',
+            'message' => 'تم رفض طلب المحفظة.',
         ]);
 
         return response()->json([

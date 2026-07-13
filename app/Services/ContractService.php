@@ -7,7 +7,6 @@ use App\Models\Contract;
 use App\Models\JobPost;
 use App\Models\ServiceRequest;
 use App\Models\User;
-use App\Models\UserNotification;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\DB;
