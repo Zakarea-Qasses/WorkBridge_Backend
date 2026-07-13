@@ -12,6 +12,24 @@ use Illuminate\Validation\Rule;
 
 class UserProjectController extends Controller
 {
+    public function mine(Request $request)
+    {
+        $projects = UserProject::with([
+            'user:id,name,role',
+            'category:id,name',
+            'governorate:id,name',
+            'city:id,name,governorate_id',
+            'skills:id,name',
+        ])
+            ->where('user_id', $request->user()->id)
+            ->latest()
+            ->paginate(15);
+
+        return response()->json([
+            'projects' => $projects,
+        ]);
+    }
+
     public function index(Request $request)
     {
         $data = $request->validate([
@@ -88,7 +106,6 @@ class UserProjectController extends Controller
             'category_id' => ['required', 'exists:categories,id'],
             'governorate_id' => ['nullable', 'exists:governorates,id'],
             'city_id' => ['nullable', 'exists:cities,id'],
-
             'skills' => ['nullable', 'array'],
             'skills.*' => ['exists:skills,id'],
         ]);
@@ -157,6 +174,7 @@ class UserProjectController extends Controller
             'category_id' => ['sometimes', 'exists:categories,id'],
             'governorate_id' => ['nullable', 'exists:governorates,id'],
             'city_id' => ['nullable', 'exists:cities,id'],
+            'status' => ['sometimes', Rule::in(['active', 'paused', 'closed'])],
 
             'skills' => ['nullable', 'array'],
             'skills.*' => ['exists:skills,id'],

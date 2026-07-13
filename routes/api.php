@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\ServiceRequestController;
+use App\Http\Controllers\Api\SkillController;
 use App\Http\Controllers\Api\UserNotificationController;
 use App\Http\Controllers\Api\UserProjectController;
 use App\Http\Controllers\Api\UserSettingController;
@@ -161,6 +162,7 @@ Route::get('/cities/{id}',[LocationController::class,'city']);
 Route::get('/governorates/{id}/cities',[LocationController::class,'cities']);
 
 Route::get('/categories', [CategoryController::class, 'index']);
+Route::get('/skills', [SkillController::class, 'index']);
 
 //Services Routes
 Route::get('/services', [ServiceController::class, 'index']);
@@ -174,6 +176,7 @@ Route::middleware('auth:sanctum','verified')->group(function () {
 
 //Project Routes
 Route::get('/projects', [UserProjectController::class, 'index']);
+Route::get('/projects/mine', [UserProjectController::class, 'mine'])->middleware('auth:sanctum');
 Route::get('/projects/{id}', [UserProjectController::class, 'show']);
 
 Route::middleware('auth:sanctum')->group(function () {
