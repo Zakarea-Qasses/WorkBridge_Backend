@@ -108,6 +108,19 @@ class ReportController extends Controller
             }
         }
 
+        if (isset($data['contract_id']) && in_array($data['category'] ?? 'complaint', ['complaint', 'dispute', 'payment'], true)) {
+            $alreadyReported = Report::where('contract_id', $data['contract_id'])
+                ->where('reporter_id', $reporter->id)
+                ->whereIn('category', ['complaint', 'dispute', 'payment'])
+                ->exists();
+
+            if ($alreadyReported) {
+                return response()->json([
+                    'message' => 'لقد أرسلت نزاعك على هذا العقد مسبقاً.',
+                ], 409);
+            }
+        }
+
         $report = Report::create([
             'reporter_id' => $reporter->id,
             'target_type' => $data['target_type'],
@@ -195,48 +208,44 @@ class ReportController extends Controller
         $data = $request->validate([
             'status' => ['required', 'in:accepted,rejected'],
             'admin_decision' => ['nullable', 'string'],
-            'admin_action' => ['nullable', 'in:refund_client,release_freelancer'],
         ]);
 
         $report = Report::findOrFail($id);
-
-        if ($report->contract && $data['status'] === 'accepted' && empty($data['admin_action'])) {
-            return response()->json([
-                'message' => 'يجب اختيار الإجراء المالي عند قبول نزاع مرتبط بعقد.',
-                'errors' => [
-                    'admin_action' => ['اختر إعادة المبلغ للعميل أو تحريره لمقدم الخدمة.'],
-                ],
-            ], 422);
-        }
 
         $report->update([
             'status' => $data['status'],
             'admin_decision' => $data['admin_decision'] ?? null,
         ]);
 
-        if ($report->contract && $data['status'] === 'accepted' && isset($data['admin_action'])) {
-            if ($data['admin_action'] === 'refund_client') {
-                $this->contractService->refundClient($report->contract);
-            }
-
-            if ($data['admin_action'] === 'release_freelancer') {
-                $this->contractService->releaseFreelancerFromDispute($report->contract);
-            }
-        }
-
         if ($report->contract && $data['status'] === 'rejected') {
             $this->contractService->resumeAfterRejectedDispute($report->contract);
         }
 
+        $isContractDispute = (bool) $report->contract_id;
+        $accepted = $data['status'] === 'accepted';
+        $decisionNote = trim((string) ($data['admin_decision'] ?? ''));
+        $notificationTitle = $isContractDispute
+            ? ($accepted ? 'تم قبول النزاع' : 'تم رفض النزاع')
+            : ($accepted ? 'تم قبول البلاغ' : 'تم رفض البلاغ');
+        $notificationMessage = $isContractDispute
+            ? ($accepted
+                ? 'تم قبول النزاع الذي قدمته على العقد رقم ' . $report->contract_id . '.'
+                : 'تم رفض النزاع الذي قدمته على العقد رقم ' . $report->contract_id . '.')
+            : ($accepted
+                ? 'تم قبول البلاغ الذي أرسلته.'
+                : 'تم رفض البلاغ الذي أرسلته.');
+
+        if ($decisionNote !== '') {
+            $notificationMessage .= ' قرار الإدارة: ' . $decisionNote;
+        }
+
         UserNotification::create([
             'user_id' => $report->reporter_id,
-            'type' => 'report_decision',
-            'title' => $data['status'] === 'accepted'
-                ? 'تم قبول البلاغ'
-                : 'تم رفض البلاغ',
-            'message' => $data['status'] === 'accepted'
-                ? 'تم قبول البلاغ الذي أرسلته.'
-                : 'تم رفض البلاغ الذي أرسلته.',
+            'type' => $isContractDispute
+                ? ($accepted ? 'contract_dispute_accepted' : 'contract_dispute_rejected')
+                : ($accepted ? 'report_accepted' : 'report_rejected'),
+            'title' => $notificationTitle,
+            'message' => $notificationMessage,
         ]);
 
         if ($report->contract) {

@@ -21,13 +21,17 @@ class ContractController extends Controller
     {
         $userId = $request->user()->id;
 
-        $contracts = Contract::with(['client:id,name,email', 'freelancer:id,name,email', 'project:id,title', 'serviceRequest:id,title'])
+        $contracts = Contract::with(['client:id,name,email', 'freelancer:id,name,email', 'project:id,title', 'serviceRequest:id,title', 'jobPost:id,title'])
             ->where(function ($query) use ($userId) {
                 $query->where('client_id', $userId)
                     ->orWhere('freelancer_id', $userId);
             })
             ->latest()
             ->paginate(10);
+
+        $contracts->getCollection()->each(function (Contract $contract) use ($userId) {
+            $contract->setAttribute('has_opened_issue', $this->hasOpenedIssue($contract, $userId));
+        });
 
         return response()->json([
             'contracts' => $contracts,
@@ -36,12 +40,14 @@ class ContractController extends Controller
 
     public function show(Request $request, int $id)
     {
-        $contract = Contract::with(['client:id,name,email', 'freelancer:id,name,email', 'project', 'serviceRequest', 'reviews'])
+        $contract = Contract::with(['client:id,name,email', 'freelancer:id,name,email', 'project', 'serviceRequest', 'jobPost', 'reviews'])
             ->findOrFail($id);
 
         if (! $this->canSee($request, $contract)) {
             return response()->json(['message' => 'غير مصرح لك بتنفيذ هذا الإجراء'], 403);
         }
+
+        $contract->setAttribute('has_opened_issue', $this->hasOpenedIssue($contract, $request->user()->id));
 
         return response()->json([
             'contract' => $contract,
@@ -64,6 +70,11 @@ class ContractController extends Controller
             ->where('client_id', $request->user()->id)
             ->latest()
             ->paginate(10);
+
+        $userId = $request->user()->id;
+        $contracts->getCollection()->each(function (Contract $contract) use ($userId) {
+            $contract->setAttribute('has_opened_issue', $this->hasOpenedIssue($contract, $userId));
+        });
 
         return response()->json([
             'contracts' => $contracts,
@@ -112,6 +123,10 @@ class ContractController extends Controller
     {
         $contract = Contract::findOrFail($id);
 
+        if ($contract->job_post_id) {
+            return response()->json(['message' => 'عقد الوظيفة لا يحتاج إلى تمويل.'], 422);
+        }
+
         if ($contract->client_id !== $request->user()->id) {
             return response()->json(['message' => 'فقط صاحب العقد يمكنه بدء العقد'], 403);
         }
@@ -133,6 +148,10 @@ class ContractController extends Controller
     public function complete(Request $request, int $id)
     {
         $contract = Contract::findOrFail($id);
+
+        if ($contract->job_post_id) {
+            return response()->json(['message' => 'عقد الوظيفة غير مرتبط بدفعة مالية.'], 422);
+        }
 
         if ($contract->client_id !== $request->user()->id) {
             return response()->json(['message' => 'فقط صاحب العقد يمكنه إكمال العقد'], 403);
@@ -183,5 +202,13 @@ class ContractController extends Controller
         return $user->role === 'admin'
             || $contract->client_id === $user->id
             || $contract->freelancer_id === $user->id;
+    }
+
+    private function hasOpenedIssue(Contract $contract, int $userId): bool
+    {
+        return $contract->reports()
+            ->where('reporter_id', $userId)
+            ->whereIn('category', ['complaint', 'dispute', 'payment'])
+            ->exists();
     }
 }

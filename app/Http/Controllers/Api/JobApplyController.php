@@ -6,12 +6,17 @@ use App\Http\Controllers\Controller;
 use App\Models\JobApply;
 use App\Models\JobPost;
 use App\Models\UserNotification;
+use App\Services\ContractService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class JobApplyController extends Controller
 {
+    public function __construct(
+        protected ContractService $contractService
+    ) {}
+
     public function store(Request $request, $jobId)
     {
         $user = $request->user();
@@ -88,7 +93,7 @@ class JobApplyController extends Controller
             'status' => ['required', Rule::in(['pending', 'accepted', 'rejected'])],
         ]);
 
-        $application = JobApply::with('job')->findOrFail($id);
+        $application = JobApply::with(['job.company', 'user'])->findOrFail($id);
         $company = $request->user()->company;
 
         if (! $company || $application->job->company_id !== $company->id) {
@@ -115,6 +120,14 @@ class JobApplyController extends Controller
             $application->update([
                 'status' => $data['status'],
             ]);
+
+            if ($data['status'] === 'accepted') {
+                $this->contractService->createFromJobPost(
+                    $application->job,
+                    $application->user,
+                    (float) ($application->job->salary ?? 0)
+                );
+            }
         });
 
         $notificationType = $data['status'] === 'accepted' ? 'job_application_accepted' : 'job_application_' . $data['status'];

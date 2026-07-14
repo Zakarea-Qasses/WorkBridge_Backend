@@ -16,6 +16,7 @@ class WalletRequest extends Model
         'amount',
         'status',
         'payment_note',
+        'deposit_reference',
         'deposit_receipt_path',
         'withdrawal_details',
         'admin_note',

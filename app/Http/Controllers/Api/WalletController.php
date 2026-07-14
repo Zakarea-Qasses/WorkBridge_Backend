@@ -81,11 +81,24 @@ class WalletController extends Controller
 
     public function requestDeposit(Request $request)
     {
+        $request->merge([
+            'deposit_proof' => $request->filled('deposit_proof')
+                ? trim((string) $request->input('deposit_proof'))
+                : null,
+        ]);
+
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01'],
             'payment_note' => ['nullable', 'string', 'max:1000'],
-            'deposit_proof' => ['nullable', 'string', 'max:1000'],
+            'deposit_proof' => [
+                'nullable',
+                'string',
+                'max:191',
+                Rule::unique('wallet_requests', 'deposit_reference'),
+            ],
             'deposit_receipt' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+        ], [
+            'deposit_proof.unique' => 'رقم الإيداع أو مرجع التحويل مستخدم في طلب شحن سابق. استخدم رقماً مختلفاً لكل عملية.',
         ]);
 
         if (empty($data['deposit_proof']) && ! $request->hasFile('deposit_receipt')) {
@@ -105,6 +118,7 @@ class WalletController extends Controller
             'amount' => $data['amount'],
             'status' => 'pending',
             'payment_note' => $data['payment_note'] ?? null,
+            'deposit_reference' => $data['deposit_proof'] ?? null,
             'deposit_receipt_path' => $receiptPath,
         ]);
         
