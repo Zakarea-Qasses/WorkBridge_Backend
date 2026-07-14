@@ -241,6 +241,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::get('/transactions', [WalletController::class, 'adminTransactions']);
     Route::get('/escrow/transactions', [WalletController::class, 'escrowTransactions']);
     Route::get('/earnings', [WalletController::class, 'adminEarnings']);
+    Route::post('/earnings/withdraw', [WalletController::class, 'withdrawAdminEarnings']);
     Route::get('/settings', [AdminSettingController::class, 'show']);
     Route::put('/settings', [AdminSettingController::class, 'update']);
     Route::get('/users/review-board', [AdminUserController::class, 'reviewBoard']);

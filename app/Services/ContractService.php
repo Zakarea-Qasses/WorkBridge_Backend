@@ -58,13 +58,13 @@ class ContractService
             ]
         );
     }
+<<<<<<< HEAD
 
+=======
+>>>>>>> f5ae95468a1be12f6716af4c984cdc4c68c53a8c
     public function createFromJobPost(JobPost $jobPost, User $freelancer, float $amount): Contract
     {
-        $this->assertPositiveAmount($amount);
         $this->assertDifferentParties($jobPost->company->user_id, $freelancer->id);
-
-        $split = $this->splitAmount($amount);
 
         return Contract::firstOrCreate(
             [
@@ -74,13 +74,16 @@ class ContractService
             [
                 'client_id' => $jobPost->company->user_id,
                 'amount' => $amount,
-                'commission_amount' => $split['commission'],
-                'freelancer_amount' => $split['freelancer'],
-                'status' => 'pending',
+                'commission_amount' => 0,
+                'freelancer_amount' => $amount,
+                'status' => 'in_progress',
             ]
         );
     }
+<<<<<<< HEAD
 
+=======
+>>>>>>> f5ae95468a1be12f6716af4c984cdc4c68c53a8c
     public function fund(Contract $contract): Contract
     {
         if ($contract->status !== 'pending') {
@@ -154,6 +157,11 @@ class ContractService
             ]);
         }
 
+        if ($contract->job_post_id) {
+            $contract->update(['status' => 'canceled']);
+            return $contract->fresh();
+        }
+
         if ($contract->status === 'pending') {
             $contract->update(['status' => 'canceled']);
             return $contract->fresh();
@@ -217,6 +225,10 @@ class ContractService
 
     public function openDispute(Contract $contract): Contract
     {
+        if ($contract->status === 'dispute') {
+            return $contract->fresh();
+        }
+
         if (! in_array($contract->status, ['funded', 'in_progress'], true)) {
             throw ValidationException::withMessages([
                 'contract' => 'يمكن فتح نزاع فقط على العقود الممولة.',

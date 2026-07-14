@@ -87,6 +87,52 @@ class WalletService
         });
     }
 
+    public function withdrawAdminEarnings(
+        User $admin,
+        float $amount,
+        string $paymentMethod,
+        string $recipientAccount,
+    ): WalletTransaction {
+        if ($amount <= 0) {
+            throw ValidationException::withMessages([
+                'amount' => 'يجب أن يكون المبلغ أكبر من صفر.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($admin, $amount, $paymentMethod, $recipientAccount) {
+            $wallet = Wallet::where('type', 'admin')
+                ->where('is_active', true)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $balanceBefore = (float) $wallet->balance;
+            if ($balanceBefore < $amount) {
+                throw ValidationException::withMessages([
+                    'amount' => 'رصيد محفظة الأدمن غير كاف.',
+                ]);
+            }
+
+            $balanceAfter = $balanceBefore - $amount;
+            $wallet->update(['balance' => $balanceAfter]);
+
+            return WalletTransaction::create([
+                'wallet_id' => $wallet->id,
+                'user_id' => $admin->id,
+                'type' => 'admin_withdrawal',
+                'direction' => 'debit',
+                'amount' => $amount,
+                'balance_before' => $balanceBefore,
+                'balance_after' => $balanceAfter,
+                'status' => 'completed',
+                'description' => sprintf(
+                    'Admin earnings withdrawal via %s to %s',
+                    $paymentMethod,
+                    $recipientAccount,
+                ),
+            ]);
+        });
+    }
+
     public function transferToAdminWallet( User $user, float $amount)
     {
         if ($amount <= 0) {
