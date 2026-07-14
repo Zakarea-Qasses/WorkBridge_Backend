@@ -12,6 +12,7 @@ use App\Models\UserNotification;
 use App\Models\UserProject;
 use App\Services\ContractService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class ReportController extends Controller
@@ -210,18 +211,38 @@ class ReportController extends Controller
             'admin_decision' => ['nullable', 'string'],
         ]);
 
-        $report = Report::findOrFail($id);
+        $report = DB::transaction(function () use ($id, $data) {
+            $report = Report::lockForUpdate()->findOrFail($id);
 
-        $report->update([
-            'status' => $data['status'],
-            'admin_decision' => $data['admin_decision'] ?? null,
-        ]);
+            $report->update([
+                'status' => $data['status'],
+                'admin_decision' => $data['admin_decision'] ?? null,
+            ]);
 
-        if ($report->contract && ! Report::where('contract_id', $report->contract_id)
-            ->where('status', 'pending')
-            ->exists()) {
-            $this->contractService->resumeAfterDisputeDecision($report->contract);
-        }
+            $contract = $report->contract;
+            if (! $contract) {
+                return $report;
+            }
+
+            $isAcceptedFundedContract = $data['status'] === 'accepted'
+                && $contract->status === 'dispute'
+                && $contract->funded_at !== null;
+
+            if ($isAcceptedFundedContract) {
+                $this->contractService->refundClient($contract, 'refunded');
+                return $report;
+            }
+
+            $hasPendingDisputes = Report::where('contract_id', $report->contract_id)
+                ->where('status', 'pending')
+                ->exists();
+
+            if (! $hasPendingDisputes && $contract->status === 'dispute') {
+                $this->contractService->resumeAfterDisputeDecision($contract);
+            }
+
+            return $report;
+        });
 
         $isContractDispute = (bool) $report->contract_id;
         $accepted = $data['status'] === 'accepted';
@@ -229,6 +250,9 @@ class ReportController extends Controller
         $notificationTitle = $isContractDispute
             ? ($accepted ? 'تم قبول النزاع' : 'تم رفض النزاع')
             : ($accepted ? 'تم قبول البلاغ' : 'تم رفض البلاغ');
+        $refundedFundedContract = $isContractDispute
+            && $accepted
+            && $report->contract?->status === 'refunded';
         $notificationMessage = $isContractDispute
             ? ($accepted
                 ? 'تم قبول النزاع الذي قدمته على العقد رقم ' . $report->contract_id . '.'
@@ -236,6 +260,10 @@ class ReportController extends Controller
             : ($accepted
                 ? 'تم قبول البلاغ الذي أرسلته.'
                 : 'تم رفض البلاغ الذي أرسلته.');
+
+        if ($refundedFundedContract) {
+            $notificationMessage .= ' تم استرجاع مبلغ العقد إلى محفظة الجهة الدافعة.';
+        }
 
         if ($decisionNote !== '') {
             $notificationMessage .= ' قرار الإدارة: ' . $decisionNote;
@@ -259,7 +287,9 @@ class ReportController extends Controller
                 'user_id' => $otherPartyId,
                 'type' => 'contract_dispute_decision',
                 'title' => 'صدر قرار الإدارة في نزاع العقد',
-                'message' => 'صدر قرار الإدارة في النزاع المرتبط بالعقد رقم ' . $report->contract_id . '.',
+                'message' => $refundedFundedContract
+                    ? 'تم قبول النزاع المرتبط بالعقد رقم ' . $report->contract_id . ' وإرجاع مبلغ العقد إلى محفظة الجهة الدافعة.'
+                    : 'صدر قرار الإدارة في النزاع المرتبط بالعقد رقم ' . $report->contract_id . '.',
             ]);
         }
 
