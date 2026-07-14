@@ -226,6 +226,28 @@ class WalletController extends Controller
         ]);
     }
 
+    public function withdrawAdminEarnings(Request $request)
+    {
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'min:1'],
+            'payment_method' => ['required', Rule::in(['sham_cash', 'al_haram', 'syriatel_cash'])],
+            'recipient_account' => ['required', 'string', 'max:191'],
+        ]);
+
+        $transaction = $this->walletService->withdrawAdminEarnings(
+            $request->user(),
+            (float) $data['amount'],
+            $data['payment_method'],
+            trim($data['recipient_account']),
+        );
+
+        return response()->json([
+            'status' => true,
+            'message' => 'تم سحب أرباح الأدمن وتسجيل العملية بنجاح.',
+            'transaction' => $transaction,
+        ]);
+    }
+
     public function escrowTransactions()
     {
         $wallet = \App\Models\Wallet::where('type', 'escrow')
