@@ -169,8 +169,13 @@ class ContractService
             $contract->application->update([
                 'status'=>'rejeted'
             ]);
+            
          }
             
+          if($contract->JopApply){
+            $contract->JopApply->update([
+                'status'=>'rejeted'
+            ]);}
 
         return $this->refundClient($contract, 'canceled');
     }

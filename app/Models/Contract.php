@@ -51,7 +51,7 @@ class Contract extends Model
 
     public function jobPost()
     {
-        return $this->belongsTo(JobPost::class);
+        return $this->belongsTo(JobPost::class, 'job_post_id');
     }
 
     public function application()
