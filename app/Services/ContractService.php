@@ -58,6 +58,10 @@ class ContractService
             ]
         );
     }
+<<<<<<< HEAD
+
+=======
+>>>>>>> f5ae95468a1be12f6716af4c984cdc4c68c53a8c
     public function createFromJobPost(JobPost $jobPost, User $freelancer, float $amount): Contract
     {
         $this->assertDifferentParties($jobPost->company->user_id, $freelancer->id);
@@ -76,6 +80,10 @@ class ContractService
             ]
         );
     }
+<<<<<<< HEAD
+
+=======
+>>>>>>> f5ae95468a1be12f6716af4c984cdc4c68c53a8c
     public function fund(Contract $contract): Contract
     {
         if ($contract->status !== 'pending') {
