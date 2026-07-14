@@ -58,7 +58,7 @@ class ContractService
             ]
         );
     }
-/*
+
     public function createFromJobPost(JobPost $jobPost, User $freelancer, float $amount): Contract
     {
         $this->assertPositiveAmount($amount);
@@ -80,7 +80,7 @@ class ContractService
             ]
         );
     }
-*/
+
     public function fund(Contract $contract): Contract
     {
         if ($contract->status !== 'pending') {

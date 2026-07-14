@@ -70,7 +70,7 @@ class ContractController extends Controller
         ]);
     }
 
-    /*public function createCompanyJobContract(Request $request, int $jobId)
+    public function createCompanyJobContract(Request $request, int $jobId)
     {
         if ($request->user()->role !== 'company') {
             return response()->json(['message' => 'فقط حسابات الشركات يمكنها إنشاء عقود الوظائف'], 403);
@@ -107,7 +107,7 @@ class ContractController extends Controller
             'contract' => $contract->load(['client:id,name,email', 'freelancer:id,name,email', 'jobPost:id,title']),
         ], 201);
     }
-*/
+
     public function start(Request $request, int $id)
     {
         $contract = Contract::findOrFail($id);
