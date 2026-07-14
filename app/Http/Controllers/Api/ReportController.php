@@ -217,8 +217,10 @@ class ReportController extends Controller
             'admin_decision' => $data['admin_decision'] ?? null,
         ]);
 
-        if ($report->contract && $data['status'] === 'rejected') {
-            $this->contractService->resumeAfterRejectedDispute($report->contract);
+        if ($report->contract && ! Report::where('contract_id', $report->contract_id)
+            ->where('status', 'pending')
+            ->exists()) {
+            $this->contractService->resumeAfterDisputeDecision($report->contract);
         }
 
         $isContractDispute = (bool) $report->contract_id;
