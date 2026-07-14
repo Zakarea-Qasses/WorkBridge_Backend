@@ -21,7 +21,7 @@ class JobPostController extends Controller
             'max_salary' => ['nullable', 'numeric', 'min:0'],
         ]);
 
-        $jobs = JobPost::with(['company:id,company_name,logo', 'city.governorate'])
+        $jobs = JobPost::with(['company:id,company_name', 'city.governorate'])
             ->where('status', $data['status'] ?? 'active')
             ->when($data['search'] ?? null, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
@@ -46,7 +46,7 @@ class JobPostController extends Controller
 
     public function show($id)
     {
-        $job = JobPost::with(['company:id,company_name,logo,description', 'city.governorate'])
+        $job = JobPost::with(['company:id,company_name,description', 'city.governorate'])
             ->findOrFail($id);
 
         return response()->json([

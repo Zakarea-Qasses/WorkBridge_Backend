@@ -148,7 +148,7 @@ class JobApplyController extends Controller
 
     public function myApplications(Request $request)
     {
-        $applications = JobApply::with(['job.company:id,company_name,logo', 'job.city.governorate'])
+        $applications = JobApply::with(['job.company:id,company_name', 'job.city.governorate'])
             ->where('user_id', $request->user()->id)
             ->latest()
             ->get();

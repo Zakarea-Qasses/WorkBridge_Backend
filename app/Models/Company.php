@@ -12,7 +12,6 @@ class Company extends Model
         'governorate_id',
         'city_id',
         'company_name',
-        'logo',
         'website',
         'location',
         'phone',
