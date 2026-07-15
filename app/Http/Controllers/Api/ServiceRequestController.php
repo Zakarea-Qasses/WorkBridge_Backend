@@ -107,7 +107,7 @@ class ServiceRequestController extends Controller
             ], 403);
         }
 
-        [$serviceRequest, $contract, $rejectedRequestIds] = DB::transaction(function () use ($id) {
+        [$serviceRequest, $contract] = DB::transaction(function () use ($id) {
             $serviceRequest = ServiceRequest::with('service')->lockForUpdate()->findOrFail($id);
 
             if ($serviceRequest->status !== 'pending') {
@@ -116,30 +116,7 @@ class ServiceRequestController extends Controller
                 ]);
             }
 
-            $hasAcceptedRequest = ServiceRequest::where('service_id', $serviceRequest->service_id)
-                ->where('status', 'accepted')
-                ->where('id', '!=', $serviceRequest->id)
-                ->exists();
-
-            if ($hasAcceptedRequest) {
-                throw ValidationException::withMessages([
-                    'request' => 'تم قبول طلب آخر لهذه الخدمة مسبقاً.',
-                ]);
-            }
-
-            $rejectedRequests = ServiceRequest::with('client:id,name,email')
-                ->where('service_id', $serviceRequest->service_id)
-                ->where('id', '!=', $serviceRequest->id)
-                ->where('status', 'pending')
-                ->lockForUpdate()
-                ->get();
-
             $serviceRequest->update(['status' => 'accepted']);
-
-            if ($rejectedRequests->isNotEmpty()) {
-                ServiceRequest::whereKey($rejectedRequests->modelKeys())
-                    ->update(['status' => 'rejected']);
-            }
 
             $contract = $this->contractService->createFromServiceRequest($serviceRequest);
 
@@ -150,23 +127,13 @@ class ServiceRequestController extends Controller
                 'message' => 'تم قبول طلبك على خدمة: ' . $serviceRequest->service->title,
             ]);
 
-            foreach ($rejectedRequests as $rejectedRequest) {
-                UserNotification::create([
-                    'user_id' => $rejectedRequest->client_id,
-                    'type' => 'service_request_rejected',
-                    'title' => 'تم رفض طلب الخدمة',
-                    'message' => 'تم قبول طلب آخر على خدمة: ' . $serviceRequest->service->title,
-                ]);
-            }
-
-            return [$serviceRequest->fresh(), $contract, $rejectedRequests->modelKeys()];
+            return [$serviceRequest->fresh(), $contract];
         });
 
         return response()->json([
             'message' => 'تم قبول الطلب.',
             'service_request' => $serviceRequest,
             'contract' => $contract,
-            'rejected_request_ids' => $rejectedRequestIds,
         ]);
     }
 

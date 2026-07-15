@@ -14,7 +14,7 @@ class ServiceRequestAcceptanceTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_accepting_one_request_rejects_other_pending_requests_for_same_service(): void
+    public function test_provider_can_accept_multiple_requests_for_same_service(): void
     {
         $provider = $this->user('Provider', 'provider@example.com', 'personal');
         $firstClient = $this->user('First client', 'first-client@example.com', 'personal');
@@ -31,33 +31,33 @@ class ServiceRequestAcceptanceTest extends TestCase
             'status' => 'active',
         ]);
 
-        $acceptedRequest = $this->serviceRequest($service, $firstClient, 'First request');
-        $rejectedRequest = $this->serviceRequest($service, $secondClient, 'Second request');
-        $otherRejectedRequest = $this->serviceRequest($service, $thirdClient, 'Third request');
+        $firstRequest = $this->serviceRequest($service, $firstClient, 'First request');
+        $secondRequest = $this->serviceRequest($service, $secondClient, 'Second request');
+        $pendingRequest = $this->serviceRequest($service, $thirdClient, 'Third request');
 
         Sanctum::actingAs($provider);
 
-        $this->postJson("/api/service-requests/{$acceptedRequest->id}/accept")
+        $this->postJson("/api/service-requests/{$firstRequest->id}/accept")
             ->assertOk()
-            ->assertJsonPath('service_request.status', 'accepted')
-            ->assertJsonPath('rejected_request_ids', [$rejectedRequest->id, $otherRejectedRequest->id]);
+            ->assertJsonPath('service_request.status', 'accepted');
+        $this->postJson("/api/service-requests/{$secondRequest->id}/accept")
+            ->assertOk()
+            ->assertJsonPath('service_request.status', 'accepted');
 
-        $this->assertSame('accepted', $acceptedRequest->fresh()->status);
-        $this->assertSame('rejected', $rejectedRequest->fresh()->status);
-        $this->assertSame('rejected', $otherRejectedRequest->fresh()->status);
+        $this->assertSame('accepted', $firstRequest->fresh()->status);
+        $this->assertSame('accepted', $secondRequest->fresh()->status);
+        $this->assertSame('pending', $pendingRequest->fresh()->status);
         $this->assertDatabaseHas('contracts', [
-            'service_request_id' => $acceptedRequest->id,
+            'service_request_id' => $firstRequest->id,
             'client_id' => $firstClient->id,
             'freelancer_id' => $provider->id,
         ]);
-        $this->assertDatabaseHas('user_notifications', [
-            'user_id' => $secondClient->id,
-            'type' => 'service_request_rejected',
+        $this->assertDatabaseHas('contracts', [
+            'service_request_id' => $secondRequest->id,
+            'client_id' => $secondClient->id,
+            'freelancer_id' => $provider->id,
         ]);
-        $this->assertDatabaseHas('user_notifications', [
-            'user_id' => $thirdClient->id,
-            'type' => 'service_request_rejected',
-        ]);
+        $this->assertDatabaseCount('contracts', 2);
     }
 
     private function user(string $name, string $email, string $role): User
