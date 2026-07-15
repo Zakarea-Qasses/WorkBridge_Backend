@@ -8,6 +8,8 @@ use App\Models\ServiceRequest;
 use App\Models\UserNotification;
 use App\Services\ContractService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ServiceRequestController extends Controller
 {
@@ -105,23 +107,66 @@ class ServiceRequestController extends Controller
             ], 403);
         }
 
-        $serviceRequest->update([
-            'status' => 'accepted',
-        ]);
+        [$serviceRequest, $contract, $rejectedRequestIds] = DB::transaction(function () use ($id) {
+            $serviceRequest = ServiceRequest::with('service')->lockForUpdate()->findOrFail($id);
 
-        $contract = $this->contractService->createFromServiceRequest($serviceRequest);
+            if ($serviceRequest->status !== 'pending') {
+                throw ValidationException::withMessages([
+                    'request' => 'يمكن قبول الطلبات قيد الانتظار فقط.',
+                ]);
+            }
 
-        UserNotification::create([
-            'user_id' => $serviceRequest->client_id,
-            'type' => 'service_request_accepted',
-            'title' => 'تم قبول طلب الخدمة',
-            'message' => 'تم قبول طلبك على خدمة: ' . $serviceRequest->service->title,
-        ]);
+            $hasAcceptedRequest = ServiceRequest::where('service_id', $serviceRequest->service_id)
+                ->where('status', 'accepted')
+                ->where('id', '!=', $serviceRequest->id)
+                ->exists();
+
+            if ($hasAcceptedRequest) {
+                throw ValidationException::withMessages([
+                    'request' => 'تم قبول طلب آخر لهذه الخدمة مسبقاً.',
+                ]);
+            }
+
+            $rejectedRequests = ServiceRequest::with('client:id,name,email')
+                ->where('service_id', $serviceRequest->service_id)
+                ->where('id', '!=', $serviceRequest->id)
+                ->where('status', 'pending')
+                ->lockForUpdate()
+                ->get();
+
+            $serviceRequest->update(['status' => 'accepted']);
+
+            if ($rejectedRequests->isNotEmpty()) {
+                ServiceRequest::whereKey($rejectedRequests->modelKeys())
+                    ->update(['status' => 'rejected']);
+            }
+
+            $contract = $this->contractService->createFromServiceRequest($serviceRequest);
+
+            UserNotification::create([
+                'user_id' => $serviceRequest->client_id,
+                'type' => 'service_request_accepted',
+                'title' => 'تم قبول طلب الخدمة',
+                'message' => 'تم قبول طلبك على خدمة: ' . $serviceRequest->service->title,
+            ]);
+
+            foreach ($rejectedRequests as $rejectedRequest) {
+                UserNotification::create([
+                    'user_id' => $rejectedRequest->client_id,
+                    'type' => 'service_request_rejected',
+                    'title' => 'تم رفض طلب الخدمة',
+                    'message' => 'تم قبول طلب آخر على خدمة: ' . $serviceRequest->service->title,
+                ]);
+            }
+
+            return [$serviceRequest->fresh(), $contract, $rejectedRequests->modelKeys()];
+        });
 
         return response()->json([
             'message' => 'تم قبول الطلب.',
             'service_request' => $serviceRequest,
             'contract' => $contract,
+            'rejected_request_ids' => $rejectedRequestIds,
         ]);
     }
 
